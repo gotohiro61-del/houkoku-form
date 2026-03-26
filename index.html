@@ -600,11 +600,7 @@ function goStep1() {
 function goStep2() {
   document.getElementById('step1').classList.add('hidden');
   document.getElementById('step2').classList.remove('hidden');
-  if (venueData.venues.length === 1) {
-    document.getElementById('back-to-venues-btn').classList.add('hidden');
-  } else {
-    document.getElementById('back-to-venues-btn').classList.remove('hidden');
-  }
+  document.getElementById('back-to-venues-btn').classList.remove('hidden');
   updateDots(1);
   switchTab(0);
   renderStep2();

@@ -645,7 +645,7 @@ function loadUnreportedVenues() {
         return '<div class="venue-card" onclick="loadAndSelectVenue(\'' + esc(v.spreadsheetId) + '\',\'' + esc(v.sheetName) + '\')">' +
           '<div class="venue-info">' +
             '<div class="venue-name">(' + esc(v.dateStr) + ') ' + esc(v.sheetName) + '</div>' +
-            '<div class="venue-meta" style="color:#e53e3e;">未報告</div>' +
+            '<div class="venue-meta">' + (v.blockCount || '') + ' 大会 <span style="color:#e53e3e;">未報告</span></div>' +
           '</div>' +
         '</div>';
       }).join('');
@@ -712,7 +712,7 @@ function renderVenueList(venues) {
     return '<div class="' + cardClass + '" onclick="selectVenue(' + realIndex + ')" id="vc-' + realIndex + '">' +
       '<div class="venue-info">' +
         '<div class="venue-name">' + esc(dateLabel + ' ' + v.sheetName) + '</div>' +
-        '<div class="venue-meta">' + blockCount + ' ブロック</div>' +
+        '<div class="venue-meta">' + blockCount + ' 大会</div>' +
       '</div>' +
       (isDone ? '<div class="venue-status done">報告済</div>' : '') +
     '</div>';
@@ -792,7 +792,7 @@ function renderBlocks() {
   var area = document.getElementById('blocks-area');
   var blocks = selectedVenue.blocks || [];
   if (!blocks.length) {
-    area.innerHTML = '<p class="text-sm">ブロックデータがありません</p>';
+    area.innerHTML = '<p class="text-sm">大会データがありません</p>';
     return;
   }
   area.innerHTML = blocks.map(function(b, bi) {
@@ -800,7 +800,7 @@ function renderBlocks() {
     var teams = b.teams || [];
     var titleParts = [];
     if (b.startTime) titleParts.push(b.startTime);
-    titleParts.push(b.tournamentName || 'ブロック ' + (bi + 1));
+    titleParts.push(b.tournamentName || '大会 ' + (bi + 1));
     var cancelledHtml = b.cancelled ? '<span class="cancelled-badge">中止</span>' : '';
     return '<div class="accordion ' + (isOpen ? 'open' : '') + '" id="acc-' + bi + '">' +
       '<div class="accordion-header" onclick="toggleAccordion(' + bi + ')">' +
@@ -1067,7 +1067,7 @@ function showConfirm() {
       return '<div class="confirm-item">' + parts.join(' / ') + '</div>';
     }).join('');
     html += '<div class="confirm-section">' +
-      '<div class="confirm-section-title">' + esc(b.tournamentName || 'ブロック ' + (bi + 1)) + '</div>' +
+      '<div class="confirm-section-title">' + esc(b.tournamentName || '大会 ' + (bi + 1)) + '</div>' +
       teamLines +
     '</div>';
   });

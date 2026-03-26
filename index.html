@@ -316,10 +316,6 @@
   .report-section { background: #f0f4f8; border-radius: 14px; padding: 16px; margin-bottom: 12px; }
   .report-section .section-title { border-bottom-color: #d0dde8; }
 
-  /* Char count */
-  .char-count { font-size: 11px; color: #999; text-align: right; margin-top: 4px; }
-  .char-count.over { color: #c0392b; }
-
   /* Validation error */
   .validation-error {
     background: #fdecea; color: #c0392b; padding: 12px 16px;
@@ -332,6 +328,17 @@
     padding: 2px 8px; border-radius: 8px; font-size: 11px; font-weight: 700;
     margin-left: 8px;
   }
+  .cancel-toggle-row {
+    padding: 8px 0 12px; border-bottom: 1px solid #eee; margin-bottom: 10px;
+  }
+  .cancel-toggle {
+    display: flex; align-items: center; gap: 8px; cursor: pointer;
+    font-size: 14px; font-weight: 700; color: #c0392b;
+  }
+  .cancel-toggle input[type="checkbox"] {
+    width: 20px; height: 20px; accent-color: #c0392b;
+  }
+  .teams-disabled { opacity: 0.4; pointer-events: none; }
 
   /* Check items */
   .check-item {
@@ -523,13 +530,11 @@
         <div class="section-title">&#x1F4DD; 現場報告</div>
         <div class="form-group">
           <label>アクシデント報告</label>
-          <textarea id="accident-report" placeholder="事故・怪我・トラブル等あれば記入" maxlength="50" oninput="updateCharCount(this,'acc-count')"></textarea>
-          <div class="char-count" id="acc-count">0/50</div>
+          <textarea id="accident-report" placeholder="事故・怪我・トラブル等あれば記入" rows="3"></textarea>
         </div>
         <div class="form-group">
           <label>その他報告</label>
-          <textarea id="other-report" placeholder="連絡事項など" maxlength="50" oninput="updateCharCount(this,'other-count')"></textarea>
-          <div class="char-count" id="other-count">0/50</div>
+          <textarea id="other-report" placeholder="連絡事項など" rows="3"></textarea>
         </div>
       </div>
 
@@ -699,7 +704,12 @@ function renderBlocks() {
         '<div class="acc-arrow">&#x25BC;</div>' +
       '</div>' +
       '<div class="accordion-body">' +
-        teams.map(function(t, ti) { return renderTeamEntry(bi, ti, t, b.cancelled); }).join('') +
+        '<div class="cancel-toggle-row">' +
+          '<label class="cancel-toggle"><input type="checkbox" id="cancel-' + bi + '" ' + (b.cancelled ? 'checked' : '') + ' onchange="onCancelToggle(' + bi + ')"><span>大会中止</span></label>' +
+        '</div>' +
+        '<div id="teams-' + bi + '" class="' + (b.cancelled ? 'teams-disabled' : '') + '">' +
+          teams.map(function(t, ti) { return renderTeamEntry(bi, ti, t, b.cancelled); }).join('') +
+        '</div>' +
       '</div>' +
     '</div>';
   }).join('');
@@ -742,6 +752,20 @@ function renderTeamEntry(bi, ti, t, cancelled) {
 
 function toggleAccordion(bi) {
   document.getElementById('acc-' + bi).classList.toggle('open');
+}
+
+function onCancelToggle(bi) {
+  var cb = document.getElementById('cancel-' + bi);
+  var teamsDiv = document.getElementById('teams-' + bi);
+  var header = document.getElementById('acc-' + bi).querySelector('.acc-title');
+  var badge = header.querySelector('.cancelled-badge');
+  if (cb.checked) {
+    teamsDiv.classList.add('teams-disabled');
+    if (!badge) header.insertAdjacentHTML('beforeend', '<span class="cancelled-badge">中止</span>');
+  } else {
+    teamsDiv.classList.remove('teams-disabled');
+    if (badge) badge.remove();
+  }
 }
 
 // ----- Check Items -----
@@ -871,20 +895,14 @@ function applyAllNormal() {
 }
 
 // ========== Confirm ==========
-function updateCharCount(el, countId) {
-  var count = el.value.length;
-  var countEl = document.getElementById(countId);
-  countEl.textContent = count + '/50';
-  countEl.classList.toggle('over', count >= 50);
-}
-
 function validateForm() {
   var errors = [];
   var blocks = selectedVenue.blocks || [];
 
   // 営業活動・順位チェック（中止ブロックはスキップ）
   blocks.forEach(function(b, bi) {
-    if (b.cancelled) return;
+    var isCancelled = document.getElementById('cancel-' + bi).checked;
+    if (isCancelled) return;
     (b.teams || []).forEach(function(t, ti) {
       var sales = document.getElementById('sales-' + bi + '-' + ti).value;
       var rank = document.getElementById('rank-' + bi + '-' + ti).value;
@@ -1014,7 +1032,10 @@ async function doSubmit() {
 function buildPayload() {
   var blocks = selectedVenue.blocks || [];
   var teams = [];
+  var cancelledBlocks = [];
   blocks.forEach(function(b, bi) {
+    var isCancelled = document.getElementById('cancel-' + bi).checked;
+    cancelledBlocks.push({ headRow: b.headRow, cancelled: isCancelled });
     (b.teams || []).forEach(function(t, ti) {
       teams.push({
         teamRow: t.teamRow,
@@ -1047,6 +1068,7 @@ function buildPayload() {
     spreadsheetId: selectedVenue.spreadsheetId,
     sheetName: selectedVenue.sheetName,
     teams: teams,
+    cancelledBlocks: cancelledBlocks,
     staffList: staffList,
     accidentReport: document.getElementById('accident-report').value.trim(),
     otherReport: document.getElementById('other-report').value.trim(),

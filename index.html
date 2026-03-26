@@ -624,7 +624,47 @@ function filterVenues(filter) {
   var btns = document.querySelectorAll('.date-btn');
   var labels = ['unreported', 'yesterday', 'today', 'tomorrow'];
   btns.forEach(function(b, i) { b.classList.toggle('active', labels[i] === filter); });
-  renderVenueList(venueData.venues || []);
+
+  if (filter === 'unreported') {
+    loadUnreportedVenues();
+  } else {
+    renderVenueList(venueData.venues || []);
+  }
+}
+
+function loadUnreportedVenues() {
+  var el = document.getElementById('venue-list');
+  el.innerHTML = '<p class="text-sm text-center">未報告データを取得中...</p>';
+  fetch(API_URL + '?action=getUnreported')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) { el.innerHTML = '<p class="text-sm text-center text-red">' + esc(data.error) + '</p>'; return; }
+      var list = data.unreported || [];
+      if (!list.length) { el.innerHTML = '<p class="text-sm text-center">未報告の会場はありません（直近1週間）</p>'; return; }
+      el.innerHTML = list.map(function(v) {
+        return '<div class="venue-card" onclick="loadAndSelectVenue(\'' + esc(v.spreadsheetId) + '\',\'' + esc(v.sheetName) + '\')">' +
+          '<div class="venue-info">' +
+            '<div class="venue-name">(' + esc(v.dateStr) + ') ' + esc(v.sheetName) + '</div>' +
+            '<div class="venue-meta" style="color:#e53e3e;">未報告</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    })
+    .catch(function(e) { el.innerHTML = '<p class="text-sm text-center text-red">取得エラー: ' + e.message + '</p>'; });
+}
+
+function loadAndSelectVenue(ssId, sheetName) {
+  // 既に読み込み済みの会場か確認
+  var venues = venueData.venues || [];
+  for (var i = 0; i < venues.length; i++) {
+    if (venues[i].spreadsheetId === ssId && venues[i].sheetName === sheetName) {
+      selectVenue(i);
+      return;
+    }
+  }
+  // 未読み込みの場合は再取得が必要 → 日付タブ（本日等）に含まれていない過去の会場
+  alert('この会場のデータを読み込みます。少しお待ちください。');
+  // 会場固有の取得は将来対応
 }
 
 // ========== Venue List ==========

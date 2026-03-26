@@ -487,9 +487,9 @@
       <div class="section-title">&#x1F3DF; 会場選択</div>
       <div class="date-nav" id="date-nav">
         <button class="date-btn" onclick="filterVenues('unreported')">未報告</button>
-        <button class="date-btn" onclick="filterVenues('past')">前日</button>
+        <button class="date-btn" onclick="filterVenues('yesterday')">前日</button>
         <button class="date-btn active" onclick="filterVenues('today')">本日</button>
-        <button class="date-btn" onclick="filterVenues('future')">翌日</button>
+        <button class="date-btn" onclick="filterVenues('tomorrow')">翌日</button>
       </div>
       <div id="venue-list">
         <p class="text-sm text-center">データを読み込み中...</p>
@@ -622,7 +622,7 @@ var currentFilter = 'today';
 function filterVenues(filter) {
   currentFilter = filter;
   var btns = document.querySelectorAll('.date-btn');
-  var labels = ['unreported', 'past', 'today', 'future'];
+  var labels = ['unreported', 'yesterday', 'today', 'tomorrow'];
   btns.forEach(function(b, i) { b.classList.toggle('active', labels[i] === filter); });
   renderVenueList(venueData.venues || []);
 }
@@ -638,13 +638,15 @@ function renderVenueList(venues) {
   // フィルタ適用
   var filtered = venues.filter(function(v) {
     if (currentFilter === 'unreported') {
-      return !v.completed && (v.dayCategory === 'past' || v.dayCategory === 'today');
+      return !v.completed && (v.dayCategory === 'past' || v.dayCategory === 'yesterday' || v.dayCategory === 'today');
     }
+    if (currentFilter === 'yesterday') return v.dayCategory === 'yesterday';
+    if (currentFilter === 'tomorrow') return v.dayCategory === 'tomorrow';
     return v.dayCategory === currentFilter;
   });
 
   if (!filtered.length) {
-    var msgs = { unreported: '未報告の会場はありません', past: '前日の会場はありません', today: '本日の会場はありません', future: '翌日の会場はありません' };
+    var msgs = { unreported: '未報告の会場はありません（直近1週間）', yesterday: '前日の会場はありません', today: '本日の会場はありません', tomorrow: '翌日の会場はありません' };
     el.innerHTML = '<p class="text-sm text-center">' + (msgs[currentFilter] || '該当なし') + '</p>';
     return;
   }

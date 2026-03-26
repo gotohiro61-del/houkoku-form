@@ -823,7 +823,7 @@ function renderBlocks() {
 }
 
 function renderTeamEntry(bi, ti, t, cancelled) {
-  var salesOptions = [['', '---'], ['即決1', '即決1'], ['即決2', '即決2'], ['即決3', '即決3'], ['即決4', '即決4'], ['即決5', '即決5']];
+  var salesOptions = [['', '---'], ['なし', 'なし'], ['即決1', '即決1'], ['即決2', '即決2'], ['即決3', '即決3'], ['即決4', '即決4'], ['即決5', '即決5']];
   var rankOptions = [['', '---'], ['1位', '1位'], ['2位', '2位'], ['3位', '3位'], ['4位', '4位'], ['5位', '5位'], ['6位以下', '6位以下']];
 
   var disabledAttr = cancelled ? ' disabled' : '';
@@ -1014,7 +1014,6 @@ function validateForm() {
       var sales = document.getElementById('sales-' + bi + '-' + ti).value;
       var rank = document.getElementById('rank-' + bi + '-' + ti).value;
       if (!sales) errors.push(esc(t.teamName) + ' の営業活動が未選択です');
-      if (!rank) errors.push(esc(t.teamName) + ' の順位が未選択です');
     });
   });
 

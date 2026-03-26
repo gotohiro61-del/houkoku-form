@@ -316,6 +316,17 @@
   .report-section { background: #f0f4f8; border-radius: 14px; padding: 16px; margin-bottom: 12px; }
   .report-section .section-title { border-bottom-color: #d0dde8; }
 
+  /* Check items */
+  .check-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 0; border-bottom: 1px solid #eee;
+  }
+  .check-item:last-child { border-bottom: none; }
+  .check-item input[type="checkbox"] {
+    width: 22px; height: 22px; accent-color: #27ae60; flex-shrink: 0;
+  }
+  .check-item label { font-size: 14px; color: #333; cursor: pointer; }
+
   /* Submit button */
   .submit-btn {
     width: 100%; padding: 18px;
@@ -489,7 +500,7 @@
       </div>
     </div>
 
-    <!-- Tab 2: 報告 + 送信 -->
+    <!-- Tab 2: 報告 + チェック + 送信 -->
     <div class="tab-content" id="tab-2">
       <div class="report-section">
         <div class="section-title">&#x1F4DD; 現場報告</div>
@@ -502,6 +513,13 @@
           <textarea id="other-report" placeholder="連絡事項など"></textarea>
         </div>
       </div>
+
+      <!-- 大会運営最終チェック -->
+      <div class="section">
+        <div class="section-title">&#x2705; 大会運営最終チェック</div>
+        <div id="check-items-area"></div>
+      </div>
+
       <button class="submit-btn" onclick="showConfirm()">完了報告を送信</button>
     </div>
   </div>
@@ -631,6 +649,7 @@ function renderStep2() {
   var sa = selectedVenue.staffArea || {};
   document.getElementById('accident-report').value = sa.accidentReport || '';
   document.getElementById('other-report').value = sa.otherReport || '';
+  renderCheckItems();
   // Set normal work defaults
   document.getElementById('nw-start').value = sa.defaultStart || '09:00';
   document.getElementById('nw-end').value = sa.defaultEnd || '18:00';
@@ -648,10 +667,13 @@ function renderBlocks() {
   area.innerHTML = blocks.map(function(b, bi) {
     var isOpen = bi === 0;
     var teams = b.teams || [];
+    var titleParts = [];
+    if (b.startTime) titleParts.push(b.startTime);
+    titleParts.push(b.tournamentName || 'ブロック ' + (bi + 1));
     return '<div class="accordion ' + (isOpen ? 'open' : '') + '" id="acc-' + bi + '">' +
       '<div class="accordion-header" onclick="toggleAccordion(' + bi + ')">' +
         '<div>' +
-          '<div class="acc-title">' + esc(b.tournamentName || 'ブロック ' + (bi + 1)) + '</div>' +
+          '<div class="acc-title">' + esc(titleParts.join(' ')) + '</div>' +
           '<div class="acc-sub">' + esc(b.tournamentId || '') + ' / ' + teams.length + 'チーム</div>' +
         '</div>' +
         '<div class="acc-arrow">&#x25BC;</div>' +
@@ -664,40 +686,29 @@ function renderBlocks() {
 }
 
 function renderTeamEntry(bi, ti, t) {
-  var salesOptions = ['', '\u25EF', '\u00D7', '延期', '済'];
-  var salesLabels = ['---', '\u25EF', '\u00D7', '延期', '済'];
-  var rankOptions = ['', '優勝', '準優勝', '3位', '4位', '5位', '6位以下'];
+  var salesOptions = [['', '---'], ['即決1', '即決1'], ['即決2', '即決2'], ['即決3', '即決3'], ['即決4', '即決4'], ['即決5', '即決5']];
+  var rankOptions = [['', '---'], ['1位', '1位'], ['2位', '2位'], ['3位', '3位'], ['4位', '4位'], ['5位', '5位'], ['6位以下', '6位以下']];
 
-  var salesHtml = salesOptions.map(function(o, idx) {
-    var cls = 'toggle-btn';
-    if (t.salesActivity === o && o !== '') {
-      if (o === '\u25EF') cls += ' selected-yes';
-      else if (o === '\u00D7') cls += ' selected-no';
-      else cls += ' selected';
-    }
-    return '<button class="' + cls + '" data-sales="' + bi + '-' + ti + '" data-val="' + esc(o) + '" onclick="selectSales(this)">' + salesLabels[idx] + '</button>';
-  }).join('');
+  var salesHtml = '<select id="sales-' + bi + '-' + ti + '" style="width:100%;padding:8px 10px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:inherit;">';
+  salesOptions.forEach(function(o) {
+    salesHtml += '<option value="' + esc(o[0]) + '"' + (t.salesActivity === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>';
+  });
+  salesHtml += '</select>';
 
-  var rankHtml = rankOptions.map(function(o) {
-    var cls = 'pill-btn';
-    if (t.rank === o && o !== '') cls += ' selected';
-    return '<button class="' + cls + '" data-rank="' + bi + '-' + ti + '" data-val="' + esc(o) + '" onclick="selectRank(this)">' + (o || '---') + '</button>';
-  }).join('');
+  var rankHtml = '<select id="rank-' + bi + '-' + ti + '" style="width:100%;padding:8px 10px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:inherit;">';
+  rankOptions.forEach(function(o) {
+    rankHtml += '<option value="' + esc(o[0]) + '"' + (t.rank === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>';
+  });
+  rankHtml += '</select>';
 
   return '<div class="team-entry">' +
     '<div class="team-header">' +
       '<div class="team-name">' + esc(t.teamName) + '</div>' +
       '<div class="team-app-no">#' + esc(t.applicationNo || '') + '</div>' +
     '</div>' +
-    '<div class="team-field">' +
-      '<div class="field-label">営業活動</div>' +
-      '<div class="toggle-group" id="sales-group-' + bi + '-' + ti + '">' + salesHtml + '</div>' +
-      '<input type="hidden" id="sales-' + bi + '-' + ti + '" value="' + esc(t.salesActivity || '') + '">' +
-    '</div>' +
-    '<div class="team-field">' +
-      '<div class="field-label">順位</div>' +
-      '<div class="pill-group" id="rank-group-' + bi + '-' + ti + '">' + rankHtml + '</div>' +
-      '<input type="hidden" id="rank-' + bi + '-' + ti + '" value="' + esc(t.rank || '') + '">' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">' +
+      '<div><div class="field-label">営業活動</div>' + salesHtml + '</div>' +
+      '<div><div class="field-label">順位</div>' + rankHtml + '</div>' +
     '</div>' +
     '<div class="team-field">' +
       '<div class="field-label">備考</div>' +
@@ -706,41 +717,25 @@ function renderTeamEntry(bi, ti, t) {
   '</div>';
 }
 
-function selectSales(btn) {
-  var key = btn.getAttribute('data-sales');
-  var val = btn.getAttribute('data-val');
-  // Toggle: if already selected, deselect
-  var current = document.getElementById('sales-' + key).value;
-  if (current === val) val = '';
-  document.getElementById('sales-' + key).value = val;
-  // Update button styles
-  var btns = document.querySelectorAll('[data-sales="' + key + '"]');
-  btns.forEach(function(b) {
-    b.className = 'toggle-btn';
-    var bv = b.getAttribute('data-val');
-    if (bv === val && val !== '') {
-      if (val === '\u25EF') b.className += ' selected-yes';
-      else if (val === '\u00D7') b.className += ' selected-no';
-      else b.className += ' selected';
-    }
-  });
-}
-
-function selectRank(btn) {
-  var key = btn.getAttribute('data-rank');
-  var val = btn.getAttribute('data-val');
-  var current = document.getElementById('rank-' + key).value;
-  if (current === val) val = '';
-  document.getElementById('rank-' + key).value = val;
-  var btns = document.querySelectorAll('[data-rank="' + key + '"]');
-  btns.forEach(function(b) {
-    b.className = 'pill-btn';
-    if (b.getAttribute('data-val') === val && val !== '') b.className += ' selected';
-  });
-}
-
 function toggleAccordion(bi) {
   document.getElementById('acc-' + bi).classList.toggle('open');
+}
+
+// ----- Check Items -----
+function renderCheckItems() {
+  var sa = selectedVenue.staffArea || {};
+  var items = sa.checkItems || [];
+  var area = document.getElementById('check-items-area');
+  if (!items.length) {
+    area.innerHTML = '<p class="text-sm">チェック項目がありません</p>';
+    return;
+  }
+  area.innerHTML = items.map(function(item, i) {
+    return '<div class="check-item">' +
+      '<input type="checkbox" id="chk-' + i + '" ' + (item.checked ? 'checked' : '') + '>' +
+      '<label for="chk-' + i + '">' + esc(item.text) + '</label>' +
+    '</div>';
+  }).join('');
 }
 
 // ----- Staff -----
@@ -988,8 +983,20 @@ function buildPayload() {
     staffList: staffList,
     accidentReport: document.getElementById('accident-report').value.trim(),
     otherReport: document.getElementById('other-report').value.trim(),
+    checkItems: buildCheckItems(),
     markComplete: true
   };
+}
+
+function buildCheckItems() {
+  var sa = selectedVenue.staffArea || {};
+  var items = sa.checkItems || [];
+  return items.map(function(item, i) {
+    return {
+      row: item.row,
+      checked: document.getElementById('chk-' + i).checked,
+    };
+  });
 }
 
 // ========== Done Screen ==========

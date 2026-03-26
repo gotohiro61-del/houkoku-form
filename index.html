@@ -429,9 +429,7 @@
       <div class="section-title">&#x1F4CB; 入力者</div>
       <div class="form-group">
         <label>お名前 <span class="req">*必須</span></label>
-        <select id="staff-name">
-          <option value="">-- 選択してください --</option>
-        </select>
+        <input type="text" id="staff-name" placeholder="例: 後藤">
       </div>
     </div>
 
@@ -542,8 +540,9 @@ async function loadData() {
     venueData = data;
     document.getElementById('today-display').textContent = data.todayDisplay || '';
 
-    // 入力者ドロップダウン生成（全会場のmemberListをマージ）
-    populateStaffNameDropdown(data.venues || []);
+    // 入力者名を復元
+    var saved = localStorage.getItem(LS_KEY);
+    if (saved) document.getElementById('staff-name').value = saved;
 
     renderVenueList(data.venues || []);
 
@@ -555,28 +554,6 @@ async function loadData() {
     document.getElementById('venue-list').innerHTML = '<p class="text-sm text-center" style="color:#c0392b;">取得失敗。リロードしてください。</p>';
   } finally {
     hideLoading();
-  }
-}
-
-// ========== Staff Name Dropdown ==========
-function populateStaffNameDropdown(venues) {
-  var nameSet = {};
-  venues.forEach(function(v) {
-    (v.memberList || []).forEach(function(n) { nameSet[n] = true; });
-  });
-  var names = Object.keys(nameSet).sort();
-  var sel = document.getElementById('staff-name');
-  sel.innerHTML = '<option value="">-- 選択 --</option>';
-  names.forEach(function(n) {
-    var opt = document.createElement('option');
-    opt.value = n;
-    opt.textContent = n;
-    sel.appendChild(opt);
-  });
-  // Restore saved
-  var saved = localStorage.getItem(LS_KEY);
-  if (saved && nameSet[saved]) {
-    sel.value = saved;
   }
 }
 

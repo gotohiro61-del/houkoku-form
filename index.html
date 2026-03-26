@@ -662,9 +662,21 @@ function loadAndSelectVenue(ssId, sheetName) {
       return;
     }
   }
-  // 未読み込みの場合は再取得が必要 → 日付タブ（本日等）に含まれていない過去の会場
-  alert('この会場のデータを読み込みます。少しお待ちください。');
-  // 会場固有の取得は将来対応
+  // 未読み込み → API で個別取得
+  var el = document.getElementById('venue-list');
+  el.innerHTML = '<p class="text-sm text-center">会場データを読み込み中...</p>';
+  fetch(API_URL + '?action=getVenueBySheet&ssId=' + encodeURIComponent(ssId) + '&sheetName=' + encodeURIComponent(sheetName))
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) { el.innerHTML = '<p class="text-sm text-center text-red">' + esc(data.error) + '</p>'; return; }
+      // venueDataに追加
+      if (!venueData.venues) venueData.venues = [];
+      venueData.venues.push(data.venue);
+      if (data.memberList) venueData.memberList = data.memberList;
+      var idx = venueData.venues.length - 1;
+      selectVenue(idx);
+    })
+    .catch(function(e) { el.innerHTML = '<p class="text-sm text-center text-red">取得エラー: ' + e.message + '</p>'; });
 }
 
 // ========== Venue List ==========

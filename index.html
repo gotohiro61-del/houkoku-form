@@ -96,6 +96,19 @@
   }
   .form-group textarea { resize: vertical; min-height: 80px; }
 
+  /* Date nav */
+  .date-nav {
+    display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto;
+  }
+  .date-btn {
+    flex-shrink: 0; padding: 8px 14px; border: 2px solid #e0e0e0;
+    border-radius: 20px; background: #fafafa; font-size: 13px;
+    font-weight: 700; color: #666; cursor: pointer; transition: all 0.15s;
+  }
+  .date-btn.active { border-color: #2980b9; background: #e0edf5; color: #1a5276; }
+  .date-btn:first-child { border-color: #e74c3c; color: #c0392b; }
+  .date-btn:first-child.active { background: #fdecea; border-color: #c0392b; color: #c0392b; }
+
   /* Venue card */
   .venue-card {
     background: white; border: 2px solid #e8eaed; border-radius: 14px;
@@ -472,6 +485,12 @@
 
     <div class="section">
       <div class="section-title">&#x1F3DF; 会場選択</div>
+      <div class="date-nav" id="date-nav">
+        <button class="date-btn" onclick="filterVenues('unreported')">未報告</button>
+        <button class="date-btn" onclick="filterVenues('past')">前日</button>
+        <button class="date-btn active" onclick="filterVenues('today')">本日</button>
+        <button class="date-btn" onclick="filterVenues('future')">翌日</button>
+      </div>
       <div id="venue-list">
         <p class="text-sm text-center">データを読み込み中...</p>
       </div>
@@ -589,10 +608,6 @@ async function loadData() {
     if (saved) document.getElementById('staff-name').value = saved;
 
     renderVenueList(data.venues || []);
-
-    if (data.venues && data.venues.length === 1) {
-      selectVenue(0);
-    }
   } catch (e) {
     showError('データの取得に失敗しました: ' + e.message);
     document.getElementById('venue-list').innerHTML = '<p class="text-sm text-center" style="color:#c0392b;">取得失敗。リロードしてください。</p>';
@@ -601,23 +616,49 @@ async function loadData() {
   }
 }
 
+// ========== Date Filter ==========
+var currentFilter = 'today';
+
+function filterVenues(filter) {
+  currentFilter = filter;
+  var btns = document.querySelectorAll('.date-btn');
+  var labels = ['unreported', 'past', 'today', 'future'];
+  btns.forEach(function(b, i) { b.classList.toggle('active', labels[i] === filter); });
+  renderVenueList(venueData.venues || []);
+}
+
 // ========== Venue List ==========
 function renderVenueList(venues) {
   var el = document.getElementById('venue-list');
   if (!venues.length) {
-    el.innerHTML = '<p class="text-sm text-center">本日の会場データがありません</p>';
+    el.innerHTML = '<p class="text-sm text-center">会場データがありません</p>';
     return;
   }
-  el.innerHTML = venues.map(function(v, i) {
+
+  // フィルタ適用
+  var filtered = venues.filter(function(v) {
+    if (currentFilter === 'unreported') {
+      return !v.completed && (v.dayCategory === 'past' || v.dayCategory === 'today');
+    }
+    return v.dayCategory === currentFilter;
+  });
+
+  if (!filtered.length) {
+    var msgs = { unreported: '未報告の会場はありません', past: '前日の会場はありません', today: '本日の会場はありません', future: '翌日の会場はありません' };
+    el.innerHTML = '<p class="text-sm text-center">' + (msgs[currentFilter] || '該当なし') + '</p>';
+    return;
+  }
+
+  el.innerHTML = filtered.map(function(v) {
+    var realIndex = venues.indexOf(v);
     var blockCount = (v.blocks || []).length;
     var isDone = v.completed;
     var dateLabel = v.dateStr ? '(' + v.dateStr + ')' : '';
-    var todayLabel = v.isToday ? ' [本日]' : '';
     var cardClass = 'venue-card' + (isDone ? ' venue-done' : '');
-    return '<div class="' + cardClass + '" onclick="selectVenue(' + i + ')" id="vc-' + i + '">' +
+    return '<div class="' + cardClass + '" onclick="selectVenue(' + realIndex + ')" id="vc-' + realIndex + '">' +
       '<div class="venue-info">' +
         '<div class="venue-name">' + esc(dateLabel + ' ' + v.sheetName) + '</div>' +
-        '<div class="venue-meta">' + blockCount + ' ブロック' + todayLabel + '</div>' +
+        '<div class="venue-meta">' + blockCount + ' ブロック</div>' +
       '</div>' +
       (isDone ? '<div class="venue-status done">報告済</div>' : '') +
     '</div>';

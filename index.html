@@ -573,8 +573,10 @@
   <div id="done-screen">
     <div class="done-check">&#x2713;</div>
     <div class="done-title">報告完了</div>
+    <div class="done-subtitle" id="done-venue-name"></div>
     <div class="done-subtitle">完了報告が送信されました</div>
     <div class="done-error hidden" id="done-error"></div>
+    <button onclick="location.reload()" style="margin-top:24px;padding:14px 32px;background:linear-gradient(135deg,#2980b9,#3498db);color:white;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;">別の会場を報告する</button>
   </div>
 </div>
 
@@ -1202,6 +1204,13 @@ function showDone(errorMsg) {
   document.getElementById('step-dots').classList.add('hidden');
   var doneEl = document.getElementById('done-screen');
   doneEl.classList.add('show');
+  var vnEl = document.getElementById('done-venue-name');
+  if (selectedVenue) {
+    vnEl.textContent = (selectedVenue.dateStr ? '(' + selectedVenue.dateStr + ') ' : '') + selectedVenue.sheetName;
+    vnEl.style.fontWeight = '600';
+    vnEl.style.color = '#333';
+    vnEl.style.marginBottom = '8px';
+  }
   var errEl = document.getElementById('done-error');
   if (errorMsg) {
     errEl.textContent = errorMsg;

@@ -109,6 +109,8 @@
   .venue-card .venue-meta { font-size: 13px; color: #666; }
   .venue-card .venue-status { font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 12px; white-space: nowrap; }
   .venue-card .venue-status.done { background: #e8f5e9; color: #2e7d32; }
+  .venue-card.venue-done { background: #f0f0f0; border-color: #ccc; }
+  .venue-card.venue-done .venue-name { color: #999; }
 
   /* ===== Tab Bar ===== */
   .tab-bar {
@@ -608,27 +610,35 @@ function renderVenueList(venues) {
   }
   el.innerHTML = venues.map(function(v, i) {
     var blockCount = (v.blocks || []).length;
-    var isDone = v.staffArea && v.staffArea.completionCheck;
-    return '<div class="venue-card" onclick="selectVenue(' + i + ')" id="vc-' + i + '">' +
+    var isDone = v.completed;
+    var dateLabel = v.dateStr ? '(' + v.dateStr + ')' : '';
+    var todayLabel = v.isToday ? ' [本日]' : '';
+    var cardClass = 'venue-card' + (isDone ? ' venue-done' : '');
+    return '<div class="' + cardClass + '" onclick="selectVenue(' + i + ')" id="vc-' + i + '">' +
       '<div class="venue-info">' +
-        '<div class="venue-name">' + esc(v.sheetName) + '</div>' +
-        '<div class="venue-meta">' + blockCount + ' ブロック</div>' +
+        '<div class="venue-name">' + esc(dateLabel + ' ' + v.sheetName) + '</div>' +
+        '<div class="venue-meta">' + blockCount + ' ブロック' + todayLabel + '</div>' +
       '</div>' +
-      (isDone ? '<div class="venue-status done">登録済</div>' : '') +
+      (isDone ? '<div class="venue-status done">報告済</div>' : '') +
     '</div>';
   }).join('');
 }
 
 function selectVenue(idx) {
+  var venue = venueData.venues[idx];
+  if (venue.completed) {
+    alert('この会場は報告済みです。編集できません。');
+    return;
+  }
   var name = document.getElementById('staff-name').value.trim();
   if (!name) {
-    alert('入力者名を選択してください');
+    alert('入力者名を入力してください');
     document.getElementById('staff-name').focus();
     return;
   }
   localStorage.setItem(LS_KEY, name);
   selectedIndex = idx;
-  selectedVenue = venueData.venues[idx];
+  selectedVenue = venue;
   goStep2();
 }
 
@@ -674,6 +684,8 @@ function renderStep2() {
   document.getElementById('accident-report').value = sa.accidentReport || '';
   document.getElementById('other-report').value = sa.otherReport || '';
   renderCheckItems();
+  restoreAutoSave();
+  setupAutoSaveListeners();
   // Set normal work defaults
   document.getElementById('nw-start').value = sa.defaultStart || '09:00';
   document.getElementById('nw-end').value = sa.defaultEnd || '18:00';
@@ -1019,6 +1031,7 @@ async function doSubmit() {
     if (result.error) {
       showDone(result.error);
     } else {
+      clearAutoSave();
       showDone(null);
     }
   } catch (e) {
@@ -1121,6 +1134,141 @@ function showError(msg) {
   el.textContent = msg;
   el.classList.add('show');
   setTimeout(function() { el.classList.remove('show'); }, 5000);
+}
+
+// ========== Auto Save ==========
+var SAVE_PREFIX = 'houkoku_save_';
+var autoSaveTimer = null;
+
+function getAutoSaveKey() {
+  if (!selectedVenue) return null;
+  return SAVE_PREFIX + selectedVenue.spreadsheetId + '_' + selectedVenue.sheetName;
+}
+
+function triggerAutoSave() {
+  if (autoSaveTimer) clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(doAutoSave, 1000);
+}
+
+function doAutoSave() {
+  var key = getAutoSaveKey();
+  if (!key) return;
+  var blocks = selectedVenue.blocks || [];
+  var data = { teams: {}, staff: {}, reports: {}, checks: {}, cancels: {} };
+
+  blocks.forEach(function(b, bi) {
+    data.cancels[bi] = document.getElementById('cancel-' + bi).checked;
+    (b.teams || []).forEach(function(t, ti) {
+      var s = document.getElementById('sales-' + bi + '-' + ti);
+      var r = document.getElementById('rank-' + bi + '-' + ti);
+      var rm = document.getElementById('remarks-' + bi + '-' + ti);
+      if (s) data.teams[bi + '-' + ti] = { sales: s.value, rank: r.value, remarks: rm.value };
+    });
+  });
+
+  for (var i = 0; i < 13; i++) {
+    var sn = document.getElementById('sn-' + i);
+    if (sn && sn.value) {
+      data.staff[i] = {
+        name: sn.value,
+        nw: document.getElementById('snw-' + i).checked,
+        ci: document.getElementById('sci-' + i).value,
+        co: document.getElementById('sco-' + i).value,
+        br: document.getElementById('sb-' + i).value,
+      };
+    }
+  }
+
+  data.reports.accident = document.getElementById('accident-report').value;
+  data.reports.other = document.getElementById('other-report').value;
+  data.reports.nwStart = document.getElementById('nw-start').value;
+  data.reports.nwEnd = document.getElementById('nw-end').value;
+  data.reports.nwBreak = document.getElementById('nw-break').value;
+
+  var checkItems = (selectedVenue.staffArea || {}).checkItems || [];
+  checkItems.forEach(function(item, i) {
+    var el = document.getElementById('chk-' + i);
+    if (el) data.checks[i] = el.checked;
+  });
+
+  try { localStorage.setItem(key, JSON.stringify(data)); } catch(e) {}
+}
+
+function restoreAutoSave() {
+  var key = getAutoSaveKey();
+  if (!key) return;
+  var raw = localStorage.getItem(key);
+  if (!raw) return;
+  try {
+    var data = JSON.parse(raw);
+
+    // Restore teams
+    var blocks = selectedVenue.blocks || [];
+    blocks.forEach(function(b, bi) {
+      if (data.cancels && data.cancels[bi]) {
+        var cb = document.getElementById('cancel-' + bi);
+        if (cb) { cb.checked = true; onCancelToggle(bi); }
+      }
+      (b.teams || []).forEach(function(t, ti) {
+        var saved = data.teams && data.teams[bi + '-' + ti];
+        if (saved) {
+          var s = document.getElementById('sales-' + bi + '-' + ti);
+          var r = document.getElementById('rank-' + bi + '-' + ti);
+          var rm = document.getElementById('remarks-' + bi + '-' + ti);
+          if (s) s.value = saved.sales || '';
+          if (r) r.value = saved.rank || '';
+          if (rm) rm.value = saved.remarks || '';
+        }
+      });
+    });
+
+    // Restore staff
+    if (data.staff) {
+      for (var i in data.staff) {
+        var s = data.staff[i];
+        var sn = document.getElementById('sn-' + i);
+        if (sn && s.name) {
+          sn.value = s.name;
+          onStaffNameChange(parseInt(i));
+          if (s.nw) {
+            document.getElementById('snw-' + i).checked = true;
+            onNormalWorkToggle(parseInt(i));
+          } else {
+            document.getElementById('sci-' + i).value = s.ci || '';
+            document.getElementById('sco-' + i).value = s.co || '';
+            document.getElementById('sb-' + i).value = s.br || '';
+          }
+        }
+      }
+    }
+
+    // Restore reports
+    if (data.reports) {
+      if (data.reports.accident) document.getElementById('accident-report').value = data.reports.accident;
+      if (data.reports.other) document.getElementById('other-report').value = data.reports.other;
+      if (data.reports.nwStart) document.getElementById('nw-start').value = data.reports.nwStart;
+      if (data.reports.nwEnd) document.getElementById('nw-end').value = data.reports.nwEnd;
+      if (data.reports.nwBreak) document.getElementById('nw-break').value = data.reports.nwBreak;
+    }
+
+    // Restore checks
+    if (data.checks) {
+      for (var ci in data.checks) {
+        var el = document.getElementById('chk-' + ci);
+        if (el) el.checked = data.checks[ci];
+      }
+    }
+  } catch(e) {}
+}
+
+function clearAutoSave() {
+  var key = getAutoSaveKey();
+  if (key) localStorage.removeItem(key);
+}
+
+function setupAutoSaveListeners() {
+  document.getElementById('step2').addEventListener('input', triggerAutoSave);
+  document.getElementById('step2').addEventListener('change', triggerAutoSave);
 }
 
 // ========== Util ==========

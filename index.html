@@ -94,7 +94,7 @@
   .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
     outline: none; border-color: #2980b9; background: white;
   }
-  .form-group textarea { resize: vertical; min-height: 80px; }
+  .form-group textarea { resize: vertical; min-height: 120px; line-height: 1.6; }
 
   /* Date nav */
   .date-nav {
@@ -550,12 +550,12 @@
       <div class="report-section">
         <div class="section-title">&#x1F4DD; 現場報告</div>
         <div class="form-group">
-          <label>アクシデント報告</label>
-          <textarea id="accident-report" placeholder="事故・怪我・トラブル等あれば記入" rows="3"></textarea>
+          <label>⚠️ アクシデント報告</label>
+          <textarea id="accident-report" placeholder="事故・怪我・トラブル等あれば記入&#10;（例: 選手が足首を捻挫、救急搬送なし）" rows="4"></textarea>
         </div>
         <div class="form-group">
-          <label>その他報告</label>
-          <textarea id="other-report" placeholder="連絡事項など" rows="3"></textarea>
+          <label>📋 その他報告</label>
+          <textarea id="other-report" placeholder="連絡事項・気になった点など&#10;（例: 体育館の照明1本切れ、管理者に報告済み）" rows="4"></textarea>
         </div>
       </div>
 

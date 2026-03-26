@@ -753,7 +753,7 @@ function toggleAccordion(bi) {
 // ----- Staff -----
 function renderStaff() {
   var sa = selectedVenue.staffArea || {};
-  var memberList = selectedVenue.memberList || [];
+  var memberList = venueData.memberList || selectedVenue.memberList || [];
   var area = document.getElementById('staff-area');
   var slots = sa.staff || [];
   var maxSlots = 13;

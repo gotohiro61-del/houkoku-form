@@ -316,6 +316,23 @@
   .report-section { background: #f0f4f8; border-radius: 14px; padding: 16px; margin-bottom: 12px; }
   .report-section .section-title { border-bottom-color: #d0dde8; }
 
+  /* Char count */
+  .char-count { font-size: 11px; color: #999; text-align: right; margin-top: 4px; }
+  .char-count.over { color: #c0392b; }
+
+  /* Validation error */
+  .validation-error {
+    background: #fdecea; color: #c0392b; padding: 12px 16px;
+    border-radius: 10px; margin-bottom: 12px; font-size: 13px;
+  }
+
+  /* Cancelled badge */
+  .cancelled-badge {
+    display: inline-block; background: #fdecea; color: #c0392b;
+    padding: 2px 8px; border-radius: 8px; font-size: 11px; font-weight: 700;
+    margin-left: 8px;
+  }
+
   /* Check items */
   .check-item {
     display: flex; align-items: center; gap: 10px;
@@ -506,11 +523,13 @@
         <div class="section-title">&#x1F4DD; 現場報告</div>
         <div class="form-group">
           <label>アクシデント報告</label>
-          <textarea id="accident-report" placeholder="事故・怪我・トラブル等あれば記入"></textarea>
+          <textarea id="accident-report" placeholder="事故・怪我・トラブル等あれば記入" maxlength="50" oninput="updateCharCount(this,'acc-count')"></textarea>
+          <div class="char-count" id="acc-count">0/50</div>
         </div>
         <div class="form-group">
           <label>その他報告</label>
-          <textarea id="other-report" placeholder="連絡事項など"></textarea>
+          <textarea id="other-report" placeholder="連絡事項など" maxlength="50" oninput="updateCharCount(this,'other-count')"></textarea>
+          <div class="char-count" id="other-count">0/50</div>
         </div>
       </div>
 
@@ -670,32 +689,36 @@ function renderBlocks() {
     var titleParts = [];
     if (b.startTime) titleParts.push(b.startTime);
     titleParts.push(b.tournamentName || 'ブロック ' + (bi + 1));
+    var cancelledHtml = b.cancelled ? '<span class="cancelled-badge">中止</span>' : '';
     return '<div class="accordion ' + (isOpen ? 'open' : '') + '" id="acc-' + bi + '">' +
       '<div class="accordion-header" onclick="toggleAccordion(' + bi + ')">' +
         '<div>' +
-          '<div class="acc-title">' + esc(titleParts.join(' ')) + '</div>' +
+          '<div class="acc-title">' + esc(titleParts.join(' ')) + cancelledHtml + '</div>' +
           '<div class="acc-sub">' + esc(b.tournamentId || '') + ' / ' + teams.length + 'チーム</div>' +
         '</div>' +
         '<div class="acc-arrow">&#x25BC;</div>' +
       '</div>' +
       '<div class="accordion-body">' +
-        teams.map(function(t, ti) { return renderTeamEntry(bi, ti, t); }).join('') +
+        teams.map(function(t, ti) { return renderTeamEntry(bi, ti, t, b.cancelled); }).join('') +
       '</div>' +
     '</div>';
   }).join('');
 }
 
-function renderTeamEntry(bi, ti, t) {
+function renderTeamEntry(bi, ti, t, cancelled) {
   var salesOptions = [['', '---'], ['即決1', '即決1'], ['即決2', '即決2'], ['即決3', '即決3'], ['即決4', '即決4'], ['即決5', '即決5']];
   var rankOptions = [['', '---'], ['1位', '1位'], ['2位', '2位'], ['3位', '3位'], ['4位', '4位'], ['5位', '5位'], ['6位以下', '6位以下']];
 
-  var salesHtml = '<select id="sales-' + bi + '-' + ti + '" style="width:100%;padding:8px 10px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:inherit;">';
+  var disabledAttr = cancelled ? ' disabled' : '';
+  var selectStyle = 'width:100%;padding:8px 10px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:inherit;' + (cancelled ? 'background:#eee;color:#999;' : '');
+
+  var salesHtml = '<select id="sales-' + bi + '-' + ti + '" style="' + selectStyle + '"' + disabledAttr + '>';
   salesOptions.forEach(function(o) {
     salesHtml += '<option value="' + esc(o[0]) + '"' + (t.salesActivity === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>';
   });
   salesHtml += '</select>';
 
-  var rankHtml = '<select id="rank-' + bi + '-' + ti + '" style="width:100%;padding:8px 10px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:inherit;">';
+  var rankHtml = '<select id="rank-' + bi + '-' + ti + '" style="' + selectStyle + '"' + disabledAttr + '>';
   rankOptions.forEach(function(o) {
     rankHtml += '<option value="' + esc(o[0]) + '"' + (t.rank === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>';
   });
@@ -848,8 +871,52 @@ function applyAllNormal() {
 }
 
 // ========== Confirm ==========
+function updateCharCount(el, countId) {
+  var count = el.value.length;
+  var countEl = document.getElementById(countId);
+  countEl.textContent = count + '/50';
+  countEl.classList.toggle('over', count >= 50);
+}
+
+function validateForm() {
+  var errors = [];
+  var blocks = selectedVenue.blocks || [];
+
+  // 営業活動・順位チェック（中止ブロックはスキップ）
+  blocks.forEach(function(b, bi) {
+    if (b.cancelled) return;
+    (b.teams || []).forEach(function(t, ti) {
+      var sales = document.getElementById('sales-' + bi + '-' + ti).value;
+      var rank = document.getElementById('rank-' + bi + '-' + ti).value;
+      if (!sales) errors.push(esc(t.teamName) + ' の営業活動が未選択です');
+      if (!rank) errors.push(esc(t.teamName) + ' の順位が未選択です');
+    });
+  });
+
+  // レ点全チェック
+  var sa = selectedVenue.staffArea || {};
+  var checkItems = sa.checkItems || [];
+  var unchecked = 0;
+  checkItems.forEach(function(item, i) {
+    if (!document.getElementById('chk-' + i).checked) unchecked++;
+  });
+  if (unchecked > 0) errors.push('大会運営チェックが ' + unchecked + ' 件未チェックです');
+
+  return errors;
+}
+
 function showConfirm() {
   if (isSending) return;
+
+  // バリデーション
+  var errors = validateForm();
+  if (errors.length > 0) {
+    // 報告タブに切り替え（チェック項目が見えるように）
+    switchTab(2);
+    alert(errors.join('\n'));
+    return;
+  }
+
   var body = document.getElementById('confirm-body');
   var html = '';
 

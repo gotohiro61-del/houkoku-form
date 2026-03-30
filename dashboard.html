@@ -3,295 +3,284 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>BOOKS 現場運営</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>BOOKS</title>
 <style>
-:root {
-  --accent: #2563eb;
-  --accent-light: #eff6ff;
-  --green: #16a34a;
-  --green-bg: #f0fdf4;
-  --red: #dc2626;
-  --red-bg: #fef2f2;
-  --orange: #ca8a04;
-  --orange-bg: #fefce8;
-}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP',sans-serif;background:#fff;color:#111;min-height:100vh;-webkit-text-size-adjust:100%}
-.container{max-width:480px;margin:0 auto;padding:16px;padding-bottom:100px}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Hiragino Sans',sans-serif;
+  background:#f5f5f7;
+  color:#1d1d1f;
+  min-height:100vh;
+  -webkit-text-size-adjust:100%;
+  -webkit-font-smoothing:antialiased;
+  letter-spacing:-.01em;
+}
+.container{max-width:428px;margin:0 auto;padding:0 20px 120px}
 
-/* Loading */
-#loading-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:#fff;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .3s}
+/* ===== Loading ===== */
+#loading-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:#f5f5f7;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .4s}
 #loading-overlay.hidden{opacity:0;pointer-events:none}
-.spinner{width:36px;height:36px;border:3px solid #eee;border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+.spinner{width:28px;height:28px;border:2.5px solid #d2d2d7;border-top-color:#1d1d1f;border-radius:50%;animation:spin .6s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.loading-text{margin-top:14px;font-size:14px;color:#888}
+.loading-text{margin-top:16px;font-size:13px;color:#86868b;font-weight:500}
 
-/* Header */
-.header{background:var(--accent);padding:20px;border-radius:14px;margin-bottom:16px}
-.header h1{font-size:17px;font-weight:700;color:#fff}
-.header .badge{display:inline-block;background:rgba(255,255,255,.2);padding:4px 14px;border-radius:20px;font-size:13px;margin-top:6px;color:#fff}
+/* ===== Header ===== */
+.header{padding:48px 0 20px;text-align:left}
+.header h1{font-size:28px;font-weight:700;color:#1d1d1f;line-height:1.15;letter-spacing:-.03em}
+.header .badge{font-size:15px;color:#86868b;font-weight:400;margin-top:4px;display:block;letter-spacing:-.01em}
 
-/* Section */
-.section{background:#fff;border-radius:14px;padding:16px;margin-bottom:12px;border:1px solid #f0f0f0}
-.section-title{font-size:14px;font-weight:700;color:#333;margin-bottom:12px;display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1px solid #f0f0f0}
+/* ===== Section ===== */
+.section{background:#fff;border-radius:12px;padding:0;margin-bottom:12px;box-shadow:0 0 0 .5px rgba(0,0,0,.04),0 1px 3px rgba(0,0,0,.04)}
+.section-inner{padding:20px}
+.section-title{font-size:13px;font-weight:600;color:#86868b;margin-bottom:16px;letter-spacing:.02em}
 
-/* Date Filter */
-.date-nav{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto}
-.date-btn{flex-shrink:0;padding:8px 16px;border:1.5px solid #e5e5e5;border-radius:20px;background:#fff;font-size:13px;font-weight:600;color:#666;cursor:pointer;transition:all .15s}
-.date-btn.active{border-color:var(--accent);background:var(--accent-light);color:var(--accent)}
-.date-btn:first-child.active{border-color:var(--red);background:var(--red-bg);color:var(--red)}
-.date-btn:active{transform:scale(.96)}
+/* ===== Date Filter ===== */
+.date-nav{display:flex;gap:8px;margin-bottom:16px}
+.date-btn{padding:8px 16px;border:none;border-radius:980px;background:transparent;font-size:13px;font-weight:600;color:#86868b;cursor:pointer;transition:all .2s}
+.date-btn.active{background:#1d1d1f;color:#fff}
+.date-btn:first-child.active{background:#ff3b30;color:#fff}
+.date-btn:active{opacity:.7}
 
-/* Venue Card */
-.venue-card{background:#fff;border:1.5px solid #e5e5e5;border-radius:12px;padding:16px;margin-bottom:8px;cursor:pointer;transition:all .15s;display:flex;justify-content:space-between;align-items:center}
-.venue-card:active{transform:scale(.98);background:#fafafa}
-.venue-card .venue-name{font-size:15px;font-weight:700;margin-bottom:2px}
-.venue-card .venue-meta{font-size:12px;color:#888}
-.venue-card .venue-status{font-size:11px;font-weight:600;padding:3px 10px;border-radius:10px;background:var(--green-bg);color:var(--green)}
-.venue-card.venue-done{opacity:.45}
-.venue-card .venue-arrow{font-size:16px;color:#ccc;margin-left:8px}
+/* ===== Cards (common) ===== */
+.card{display:flex;align-items:center;padding:16px 20px;cursor:pointer;transition:background .15s;position:relative}
+.card:active{background:#f5f5f7}
+.card+.card{border-top:.5px solid rgba(0,0,0,.06)}
+.card .card-arrow{color:#c7c7cc;font-size:13px;font-weight:300;margin-left:auto;padding-left:12px}
 
-/* Back button */
-.back-btn{display:inline-flex;align-items:center;gap:4px;color:var(--accent);font-size:14px;font-weight:600;cursor:pointer;margin-bottom:12px;padding:6px 0;background:none;border:none}
+/* Venue */
+.card .v-name{font-size:17px;font-weight:600;line-height:1.3}
+.card .v-meta{font-size:13px;color:#86868b;margin-top:2px}
+.card .v-badge{font-size:11px;font-weight:600;color:#34c759;background:#f0fdf4;padding:2px 8px;border-radius:4px;margin-left:12px;white-space:nowrap}
+.card.done{opacity:.4}
+
+/* Tournament */
+.card .t-time{font-size:22px;font-weight:700;color:#1d1d1f;min-width:56px;letter-spacing:-.02em}
+.card .t-info{flex:1;margin-left:16px}
+.card .t-name{font-size:15px;font-weight:600;line-height:1.3}
+.card .t-sub{font-size:13px;color:#86868b;margin-top:1px}
+.prize-row{margin-top:6px;display:flex;flex-wrap:wrap;gap:4px}
+.prize-tag{font-size:11px;color:#af8700;background:#fefce8;padding:2px 6px;border-radius:4px;font-weight:500}
+
+/* Team */
+.team-card{padding:16px 20px;cursor:pointer;transition:background .15s;border-left:3px solid transparent}
+.team-card:active{background:#f5f5f7}
+.team-card+.team-card{border-top:.5px solid rgba(0,0,0,.06)}
+.team-card.s-green{border-left-color:#34c759}
+.team-card.s-red{border-left-color:#ff3b30}
+.team-card .t-row{display:flex;justify-content:space-between;align-items:center}
+.team-card .t-row+.t-row{margin-top:6px}
+.team-card .team-name{font-size:17px;font-weight:600}
+.team-card .app-no{font-size:11px;color:#aeaeb2}
+.team-card .rep-name{font-size:13px;color:#636366}
+.team-card .phone{font-size:13px;color:#007aff;font-weight:500}
+.team-card .rental-tag{font-size:11px;color:#af8700;background:#fefce8;padding:1px 6px;border-radius:4px;font-weight:500}
+.team-card .price{font-size:15px;font-weight:700;letter-spacing:-.02em}
+.team-card .pay-badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px}
+.pay-badge.paid{color:#34c759;background:#f0fdf4}
+.pay-badge.unpaid{color:#ff3b30;background:#fef2f2}
+.pay-badge.unknown{color:#aeaeb2;background:#f5f5f7}
+.team-card .sales-tag{font-size:11px;font-weight:600;color:#007aff;background:#eff6ff;padding:1px 6px;border-radius:4px}
+
+/* ===== Back ===== */
+.back-btn{display:inline-flex;align-items:center;gap:2px;color:#007aff;font-size:17px;font-weight:400;cursor:pointer;padding:12px 0;background:none;border:none}
 .back-btn:active{opacity:.5}
 
-/* Tournament Card */
-.tournament-card{background:#fff;border:1.5px solid #e5e5e5;border-radius:12px;padding:16px;margin-bottom:8px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:14px}
-.tournament-card:active{transform:scale(.98);border-color:var(--accent)}
-.tournament-card .tc-time{font-size:22px;font-weight:800;color:var(--accent);white-space:nowrap;min-width:58px}
-.tournament-card .tc-info{flex:1}
-.tournament-card .tc-name{font-size:15px;font-weight:700}
-.tournament-card .tc-sub{font-size:12px;color:#999;margin-top:2px}
-.tournament-card .tc-arrow{font-size:16px;color:#ccc}
-
-/* Prize */
-.prize-badge{font-size:11px;background:var(--orange-bg);color:var(--orange);padding:2px 8px;border-radius:6px;font-weight:600;display:inline-block;margin-top:2px;margin-right:4px}
-
-/* History */
-.history-card{background:#fafafa;border-radius:10px;padding:12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
-.history-card .hc-time{font-size:11px;color:#aaa}
-.history-card .hc-team{font-size:14px;font-weight:700}
-.history-card .hc-detail{font-size:12px;color:#999}
-.hc-status{display:flex;gap:5px;align-items:center}
-.status-dot{width:8px;height:8px;border-radius:50%}
-.status-dot.ok{background:var(--green)}
-.status-dot.ng{background:var(--red)}
-.resend-btn{padding:5px 12px;background:var(--red);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer}
-.resend-btn:active{opacity:.7}
+/* ===== History ===== */
+.history-item{padding:12px 20px;display:flex;justify-content:space-between;align-items:center}
+.history-item+.history-item{border-top:.5px solid rgba(0,0,0,.06)}
+.hi-time{font-size:11px;color:#aeaeb2}
+.hi-team{font-size:15px;font-weight:600}
+.hi-detail{font-size:13px;color:#aeaeb2}
+.hi-status{display:flex;gap:4px;align-items:center}
+.dot{width:7px;height:7px;border-radius:50%}
+.dot.ok{background:#34c759}
+.dot.ng{background:#ff3b30}
+.resend-btn{padding:5px 10px;background:#ff3b30;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer}
 .resend-btn:disabled{opacity:.3}
 
-/* Team Card */
-.team-card{background:#fff;border-left:4px solid #ddd;border-radius:12px;padding:14px;margin-bottom:8px;cursor:pointer;transition:all .15s;border-top:1px solid #f0f0f0;border-right:1px solid #f0f0f0;border-bottom:1px solid #f0f0f0}
-.team-card:active{transform:scale(.98)}
-.team-card.status-paid{border-left-color:var(--green)}
-.team-card.status-unpaid{border-left-color:var(--red)}
-.team-card .tc-row1{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-.team-card .tc-team-name{font-size:16px;font-weight:800}
-.team-card .tc-app-no{font-size:10px;color:#bbb;background:#f5f5f5;padding:2px 8px;border-radius:6px}
-.team-card .tc-row2{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-.team-card .tc-rep{font-size:13px;color:#666}
-.team-card .tc-phone{font-size:13px;color:var(--accent);font-weight:600}
-.team-card .tc-row3{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px}
-.team-card .tc-rental{font-size:11px;color:var(--orange);background:var(--orange-bg);padding:2px 8px;border-radius:6px;font-weight:600}
-.team-card .tc-price{font-size:15px;font-weight:800;color:#111}
-.team-card .tc-pay-status{font-size:10px;font-weight:600;padding:3px 10px;border-radius:10px}
-.tc-pay-status.paid{background:var(--green-bg);color:var(--green)}
-.tc-pay-status.unpaid{background:var(--red-bg);color:var(--red)}
-.tc-pay-status.transfer{background:var(--orange-bg);color:var(--orange)}
-.tc-pay-status.unknown{background:#f5f5f5;color:#bbb}
-.team-card .tc-sales-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--accent-light);color:var(--accent)}
-
-/* Bottom Sheet */
-.bs-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.4);z-index:500;animation:fadeIn .2s}
+/* ===== Bottom Sheet ===== */
+.bs-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.3);z-index:500}
 .bs-overlay.show{display:block}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-.bottom-sheet{position:fixed;left:0;right:0;bottom:0;max-height:92vh;background:#fff;border-radius:16px 16px 0 0;z-index:501;overflow-y:auto;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);padding-bottom:env(safe-area-inset-bottom,20px);box-shadow:0 -4px 30px rgba(0,0,0,.1)}
+.bottom-sheet{position:fixed;left:0;right:0;bottom:0;max-height:90vh;background:#fff;border-radius:12px 12px 0 0;z-index:501;overflow-y:auto;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);padding-bottom:env(safe-area-inset-bottom,24px)}
 .bottom-sheet.show{transform:translateY(0)}
-.bs-handle{width:36px;height:4px;background:#ddd;border-radius:2px;margin:10px auto}
-.bs-header{display:flex;justify-content:space-between;align-items:flex-start;padding:0 20px 14px}
-.bs-close{width:32px;height:32px;background:#f0f0f0;border:none;border-radius:50%;font-size:14px;color:#888;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.bs-team-name{font-size:20px;font-weight:800;flex:1}
-.bs-section{padding:0 20px 14px}
-.bs-section-title{font-size:11px;font-weight:700;color:#999;margin-bottom:8px;letter-spacing:.5px}
-.bs-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.bs-info-item{background:#f8f8f8;border-radius:8px;padding:10px}
-.bs-info-label{font-size:10px;color:#aaa;margin-bottom:2px}
-.bs-info-value{font-size:14px;font-weight:700}
-.bs-divider{height:1px;background:#f0f0f0;margin:0 20px 14px}
-.bs-form-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
-.bs-form-group{margin-bottom:8px}
-.bs-form-group label{display:block;font-size:11px;font-weight:600;color:#888;margin-bottom:4px}
-.bs-form-group select,.bs-form-group input{width:100%;padding:11px;border:1.5px solid #e5e5e5;border-radius:8px;font-size:16px;background:#fff;color:#111;font-family:inherit;-webkit-appearance:none}
-.bs-form-group select:focus,.bs-form-group input:focus{outline:none;border-color:var(--accent)}
+.bs-handle{width:36px;height:5px;background:#d2d2d7;border-radius:3px;margin:8px auto 4px}
+.bs-head{padding:12px 20px 16px}
+.bs-name{font-size:22px;font-weight:700;letter-spacing:-.02em}
+.bs-sub{font-size:13px;color:#86868b;margin-top:2px}
+.bs-close{position:absolute;right:16px;top:16px;width:30px;height:30px;background:#e5e5ea;border:none;border-radius:50%;font-size:12px;color:#636366;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.bs-group{padding:0 20px 16px}
+.bs-label{font-size:11px;font-weight:600;color:#86868b;margin-bottom:8px;letter-spacing:.02em}
+.bs-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:rgba(0,0,0,.06);border-radius:10px;overflow:hidden}
+.bs-cell{background:#fff;padding:12px}
+.bs-cell-label{font-size:11px;color:#aeaeb2}
+.bs-cell-value{font-size:15px;font-weight:600;margin-top:2px}
+.bs-sep{height:.5px;background:rgba(0,0,0,.06);margin:0 20px 16px}
+.bs-field{margin-bottom:12px}
+.bs-field label{display:block;font-size:11px;font-weight:600;color:#86868b;margin-bottom:4px}
+.bs-field select,.bs-field input{width:100%;padding:10px 12px;border:1px solid #d2d2d7;border-radius:8px;font-size:17px;background:#fff;color:#1d1d1f;font-family:inherit;-webkit-appearance:none}
+.bs-field select:focus,.bs-field input:focus{outline:none;border-color:#007aff}
+.bs-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bs-pay{background:#fffbeb;border-radius:10px;padding:14px;margin:0 20px 16px}
+.bs-pay-title{font-size:11px;font-weight:600;color:#af8700;margin-bottom:8px}
+.bs-btns{padding:0 20px 20px;display:flex;flex-direction:column;gap:8px}
+.btn-primary{width:100%;padding:14px;background:#007aff;color:#fff;border:none;border-radius:12px;font-size:17px;font-weight:600;cursor:pointer;letter-spacing:-.01em}
+.btn-primary:active{opacity:.75}
+.btn-primary:disabled{opacity:.3}
+.btn-danger{width:100%;padding:14px;background:#ff3b30;color:#fff;border:none;border-radius:12px;font-size:17px;font-weight:600;cursor:pointer;letter-spacing:-.01em}
+.btn-danger:active{opacity:.75}
 
-/* Payment box */
-.bs-pay-box{background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;padding:14px;margin:0 20px 14px}
-.bs-pay-box .pay-label{font-size:12px;font-weight:700;color:var(--orange);margin-bottom:8px}
-
-/* Actions */
-.bs-actions{padding:0 20px 20px;display:flex;flex-direction:column;gap:8px}
-.btn-save{width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer}
-.btn-save:active{opacity:.8}
-.btn-save:disabled{opacity:.3}
-.btn-sokketsu{width:100%;padding:14px;background:#dc2626;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
-.btn-sokketsu:active{opacity:.8}
-
-/* Report button */
-.report-btn{width:100%;padding:16px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px}
-.report-btn:active{opacity:.8}
+/* ===== Report ===== */
+.report-btn{width:100%;padding:16px;background:#007aff;color:#fff;border:none;border-radius:12px;font-size:17px;font-weight:600;cursor:pointer;margin-top:12px;letter-spacing:-.01em}
+.report-btn:active{opacity:.75}
 .report-btn:disabled{opacity:.3}
 
-/* Form */
-.form-group{margin-bottom:12px}
-.form-group label{display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:4px}
-.form-group label .req{color:var(--red);font-size:10px;margin-left:2px}
-.form-group input,.form-group select,.form-group textarea{width:100%;padding:12px;border:1.5px solid #e5e5e5;border-radius:8px;font-size:16px;background:#fff;color:#111;-webkit-appearance:none;font-family:inherit}
-.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--accent)}
-.form-group textarea{resize:vertical;min-height:90px;line-height:1.5}
+/* ===== Forms ===== */
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:13px;font-weight:500;color:#636366;margin-bottom:6px}
+.form-group label .req{color:#ff3b30;font-size:11px}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:12px;border:1px solid #d2d2d7;border-radius:10px;font-size:17px;background:#fff;color:#1d1d1f;-webkit-appearance:none;font-family:inherit}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:#007aff}
+.form-group textarea{resize:vertical;min-height:88px;line-height:1.5}
 
 /* Staff */
-.normal-work-setting{background:#f8f8f8;border-radius:10px;padding:12px;margin-bottom:12px}
-.normal-work-setting .setting-title{font-size:12px;font-weight:700;color:var(--accent);margin-bottom:8px}
-.normal-work-inputs{display:grid;grid-template-columns:1fr 1fr 70px;gap:6px;margin-bottom:8px}
-.normal-work-inputs input{width:100%;padding:8px;border:1.5px solid #e5e5e5;border-radius:8px;font-size:15px;background:#fff;color:#111;text-align:center;font-family:inherit;-webkit-appearance:none}
-.normal-work-inputs input:focus{outline:none;border-color:var(--accent)}
-.nw-label{font-size:10px;color:#aaa;text-align:center;margin-bottom:2px}
-.apply-all-btn{width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer}
-.apply-all-btn:active{opacity:.8}
-.staff-entry{border:1px solid #eee;border-radius:10px;padding:8px 10px;margin-bottom:5px;background:#fff}
-.staff-entry.has-name{border-color:#c7d2fe;background:#f5f3ff}
-.staff-entry .staff-row-top{display:grid;grid-template-columns:22px 1fr auto;gap:6px;align-items:center}
-.staff-entry .staff-num{font-size:11px;font-weight:700;color:#bbb;text-align:center}
-.staff-entry select{width:100%;padding:7px 8px;border:1px solid #e5e5e5;border-radius:6px;font-size:14px;background:#fff;color:#111;font-family:inherit}
-.staff-entry select:focus{outline:none;border-color:var(--accent)}
-.staff-row-bottom{display:grid;grid-template-columns:1fr 1fr 60px;gap:5px;margin-top:6px}
-.staff-row-bottom.collapsed{display:none}
-.staff-row-bottom input{width:100%;padding:6px;border:1px solid #e5e5e5;border-radius:6px;font-size:13px;text-align:center;background:#fff;color:#111;font-family:inherit}
-.staff-row-bottom input:focus{outline:none;border-color:var(--accent)}
-.staff-field-label{font-size:9px;color:#bbb;text-align:center;margin-bottom:1px}
-.nw-toggle{display:flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;font-weight:600;color:#bbb;white-space:nowrap;-webkit-user-select:none;user-select:none}
+.nw-box{background:#f5f5f7;border-radius:10px;padding:14px;margin-bottom:16px}
+.nw-title{font-size:13px;font-weight:600;color:#1d1d1f;margin-bottom:10px}
+.nw-inputs{display:grid;grid-template-columns:1fr 1fr 72px;gap:8px;margin-bottom:10px}
+.nw-inputs input{width:100%;padding:8px;border:1px solid #d2d2d7;border-radius:8px;font-size:15px;background:#fff;text-align:center;font-family:inherit;-webkit-appearance:none}
+.nw-inputs input:focus{outline:none;border-color:#007aff}
+.nw-label{font-size:11px;color:#86868b;text-align:center;margin-bottom:2px}
+.apply-btn{width:100%;padding:10px;background:#007aff;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
+.apply-btn:active{opacity:.75}
+.staff-row{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:.5px solid rgba(0,0,0,.06)}
+.staff-row:last-child{border-bottom:none}
+.staff-num{font-size:11px;color:#aeaeb2;width:20px;text-align:center;flex-shrink:0}
+.staff-row select{flex:1;padding:7px 8px;border:1px solid #d2d2d7;border-radius:6px;font-size:15px;background:#fff;color:#1d1d1f;font-family:inherit}
+.staff-row select:focus{outline:none;border-color:#007aff}
+.nw-toggle{display:flex;align-items:center;gap:3px;cursor:pointer;font-size:11px;color:#86868b;white-space:nowrap;-webkit-user-select:none}
 .nw-toggle input{display:none}
-.nw-toggle .switch{width:32px;height:18px;background:#ddd;border-radius:9px;position:relative;transition:background .2s}
-.nw-toggle .switch::after{content:'';width:14px;height:14px;background:#fff;border-radius:50%;position:absolute;top:2px;left:2px;transition:all .2s;box-shadow:0 1px 2px rgba(0,0,0,.15)}
-.nw-toggle input:checked+.switch{background:var(--accent)}
-.nw-toggle input:checked+.switch::after{transform:translateX(14px)}
+.nw-toggle .sw{width:34px;height:20px;background:#d2d2d7;border-radius:10px;position:relative;transition:background .2s}
+.nw-toggle .sw::after{content:'';width:16px;height:16px;background:#fff;border-radius:50%;position:absolute;top:2px;left:2px;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.nw-toggle input:checked+.sw{background:#34c759}
+.nw-toggle input:checked+.sw::after{transform:translateX(14px)}
+.staff-times{display:grid;grid-template-columns:1fr 1fr 56px;gap:4px;margin-top:6px;margin-left:28px}
+.staff-times.collapsed{display:none}
+.staff-times input{width:100%;padding:6px;border:1px solid #d2d2d7;border-radius:6px;font-size:13px;text-align:center;background:#fff;font-family:inherit}
+.staff-times input:focus{outline:none;border-color:#007aff}
+.st-label{font-size:9px;color:#aeaeb2;text-align:center}
 
 /* Check items */
-.check-item{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #f0f0f0;font-size:14px}
-.check-item:last-child{border-bottom:none}
-.check-item input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent);flex-shrink:0}
-.check-item label{flex:1;cursor:pointer;color:#444}
+.check-item{display:flex;align-items:center;gap:12px;padding:14px 20px}
+.check-item+.check-item{border-top:.5px solid rgba(0,0,0,.06)}
+.check-item input[type=checkbox]{width:22px;height:22px;accent-color:#007aff;flex-shrink:0}
+.check-item label{flex:1;cursor:pointer;font-size:15px;color:#1d1d1f}
 
 /* Confirm */
-.confirm-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.4);z-index:600;padding:16px;overflow-y:auto}
+.confirm-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.3);z-index:600;padding:20px;overflow-y:auto}
 .confirm-overlay.show{display:flex;justify-content:center;align-items:flex-start}
-.confirm-box{background:#fff;border-radius:16px;padding:24px 20px;max-width:440px;width:100%;margin:auto;box-shadow:0 8px 30px rgba(0,0,0,.12)}
-.confirm-title{font-size:17px;font-weight:800;text-align:center;color:#111;margin-bottom:16px}
-.confirm-section{background:#f8f8f8;border-radius:10px;padding:12px;margin-bottom:8px}
-.confirm-section-title{font-size:12px;font-weight:700;color:var(--accent);margin-bottom:6px}
-.confirm-item{font-size:13px;color:#555;padding:2px 0}
-.confirm-buttons{display:flex;flex-direction:column;gap:8px;margin-top:16px}
-.confirm-back-btn{width:100%;padding:12px;background:#fff;color:#888;border:1.5px solid #e5e5e5;border-radius:12px;font-size:14px;cursor:pointer}
-.confirm-send-btn{width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer}
-.confirm-send-btn:active{opacity:.8}
+.confirm-box{background:#fff;border-radius:14px;padding:24px;max-width:400px;width:100%;margin:auto}
+.confirm-title{font-size:20px;font-weight:700;text-align:center;margin-bottom:20px;letter-spacing:-.02em}
+.confirm-section{background:#f5f5f7;border-radius:10px;padding:14px;margin-bottom:8px}
+.confirm-section-title{font-size:11px;font-weight:600;color:#007aff;margin-bottom:6px}
+.confirm-item{font-size:13px;color:#636366;padding:2px 0}
+.confirm-buttons{display:flex;flex-direction:column;gap:8px;margin-top:20px}
+.confirm-back-btn{width:100%;padding:14px;background:#f5f5f7;color:#636366;border:none;border-radius:12px;font-size:17px;font-weight:500;cursor:pointer}
+.confirm-send-btn{width:100%;padding:14px;background:#007aff;color:#fff;border:none;border-radius:12px;font-size:17px;font-weight:600;cursor:pointer}
+.confirm-send-btn:active{opacity:.75}
 .confirm-send-btn:disabled{opacity:.3}
 
 /* Done */
-.done-screen{text-align:center;padding:80px 20px}
-.done-check{width:72px;height:72px;background:var(--green);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:36px;color:#fff;margin-bottom:20px}
-.done-title{font-size:22px;font-weight:800;margin-bottom:6px}
-.done-subtitle{color:#888;font-size:14px;margin-bottom:4px}
-.done-error{background:var(--red-bg);color:var(--red);padding:12px;border-radius:10px;font-size:13px;margin-top:12px}
-.done-btn{margin-top:24px;padding:14px 40px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer}
+.done-screen{text-align:center;padding:100px 20px}
+.done-icon{font-size:56px;margin-bottom:16px}
+.done-title{font-size:24px;font-weight:700;letter-spacing:-.02em}
+.done-subtitle{font-size:15px;color:#86868b;margin-top:6px}
+.done-error{background:#fef2f2;color:#ff3b30;padding:12px;border-radius:10px;font-size:13px;margin-top:16px}
+.done-btn{margin-top:32px;padding:14px 48px;background:#007aff;color:#fff;border:none;border-radius:12px;font-size:17px;font-weight:600;cursor:pointer}
 
 /* Booking */
-.booking-block{border:1.5px solid #e5e5e5;border-radius:12px;padding:18px 14px 14px;margin-bottom:12px;position:relative;background:#fafafa}
-.booking-number{position:absolute;top:-10px;left:14px;background:var(--red);color:#fff;font-size:11px;font-weight:700;padding:3px 14px;border-radius:10px}
-.copy-check{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:8px 10px;background:var(--red-bg);border-radius:8px;font-size:13px;color:var(--red);font-weight:600;cursor:pointer}
-.copy-check input[type=checkbox]{width:18px;height:18px;accent-color:var(--red)}
-.slot-payment{border-top:1.5px dashed #e5e5e5;margin:14px -14px -14px;padding:14px;background:#fffdf7;border-radius:0 0 10px 10px}
-.rental-section{border-top:1px solid #eee;margin-top:10px;padding-top:10px}
-.rental-title{font-size:12px;font-weight:600;color:#888;margin-bottom:6px}
-.rental-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f5f5f5;font-size:13px;color:#555}
-.rental-item:last-child{border-bottom:none}
+.booking-block{border:1px solid #d2d2d7;border-radius:12px;padding:20px 16px 16px;margin-bottom:14px;position:relative;background:#fff}
+.booking-number{position:absolute;top:-10px;left:16px;background:#ff3b30;color:#fff;font-size:11px;font-weight:600;padding:3px 12px;border-radius:8px}
+.copy-check{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:8px 10px;background:#fef2f2;border-radius:8px;font-size:13px;color:#ff3b30;font-weight:500;cursor:pointer}
+.copy-check input[type=checkbox]{width:18px;height:18px;accent-color:#ff3b30}
+.slot-payment{border-top:1px dashed #d2d2d7;margin:16px -16px -16px;padding:16px}
+.rental-section{border-top:.5px solid rgba(0,0,0,.06);margin-top:12px;padding-top:12px}
+.rental-title{font-size:11px;font-weight:600;color:#86868b;margin-bottom:8px}
+.rental-item{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px;color:#636366}
+.rental-item+.rental-item{border-top:.5px solid rgba(0,0,0,.04)}
 .rental-item .rental-label{flex:1}
-.rental-item select{padding:5px 6px;border:1px solid #e5e5e5;border-radius:6px;font-size:12px;background:#fff;color:#111;-webkit-appearance:none}
-.slot-summary{border-top:1.5px solid #e5e5e5;margin-top:10px;padding-top:10px}
-.slot-summary .summary-row{display:flex;justify-content:space-between;padding:3px 0;font-size:13px;color:#666}
-.slot-summary .summary-row.rental{color:var(--orange)}
-.slot-summary .summary-row.discount{color:var(--red)}
-.slot-summary .rental-detail{font-size:10px;color:#aaa;padding:0 0 3px 8px}
-.slot-summary .summary-total{display:flex;justify-content:space-between;padding:8px 0 0;margin-top:4px;border-top:2px solid var(--red);font-size:16px;font-weight:800;color:var(--red)}
-.grand-total-box{background:var(--red);border-radius:12px;padding:18px;color:#fff;margin-bottom:12px}
-.grand-total-box .gt-title{font-size:12px;opacity:.8}
-.grand-total-box .gt-breakdown{font-size:12px;opacity:.9;padding:3px 0}
-.grand-total-box .gt-amount{font-size:28px;font-weight:900;text-align:center;padding:8px 0}
+.rental-item select{padding:4px 6px;border:1px solid #d2d2d7;border-radius:6px;font-size:13px;background:#fff;-webkit-appearance:none}
+.slot-summary{border-top:1px solid #d2d2d7;margin-top:12px;padding-top:10px}
+.slot-summary .summary-row{display:flex;justify-content:space-between;padding:3px 0;font-size:13px;color:#636366}
+.slot-summary .summary-row.rental{color:#af8700}
+.slot-summary .summary-row.discount{color:#ff3b30}
+.slot-summary .rental-detail{font-size:11px;color:#aeaeb2;padding:0 0 2px 8px}
+.slot-summary .summary-total{display:flex;justify-content:space-between;padding:8px 0 0;margin-top:4px;border-top:2px solid #1d1d1f;font-size:17px;font-weight:700}
+.grand-total-box{background:#1d1d1f;border-radius:12px;padding:20px;color:#fff;margin-bottom:14px}
+.grand-total-box .gt-title{font-size:11px;color:#86868b}
+.grand-total-box .gt-breakdown{font-size:13px;color:#d2d2d7;padding:2px 0}
+.grand-total-box .gt-amount{font-size:34px;font-weight:700;text-align:center;padding:8px 0;letter-spacing:-.03em}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.type-selector{display:flex;gap:6px;margin-bottom:12px}
-.type-btn{flex:1;padding:12px 4px;border:1.5px solid #e5e5e5;border-radius:10px;background:#fff;font-size:15px;font-weight:700;text-align:center;cursor:pointer;color:#888}
-.type-btn.selected{border-color:var(--red);background:var(--red-bg);color:var(--red)}
-.type-btn:active{transform:scale(.96)}
+.type-selector{display:flex;gap:0;margin-bottom:16px;background:#f5f5f7;border-radius:8px;padding:2px}
+.type-btn{flex:1;padding:10px 4px;border:none;border-radius:7px;background:transparent;font-size:15px;font-weight:600;text-align:center;cursor:pointer;color:#636366;transition:all .2s}
+.type-btn.selected{background:#fff;color:#1d1d1f;box-shadow:0 1px 3px rgba(0,0,0,.1)}
 
 /* Cancel */
-.cancel-toggle-row{margin-bottom:8px;padding:4px 0}
-.cancel-toggle{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--red);cursor:pointer}
-.cancel-toggle input{width:18px;height:18px;accent-color:var(--red)}
-.cancelled-badge{background:var(--red-bg);color:var(--red);font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:4px}
-.teams-disabled{opacity:.3;pointer-events:none}
+.cancel-toggle-row{margin-bottom:8px}
+.cancel-toggle{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#ff3b30;cursor:pointer}
+.cancel-toggle input{width:18px;height:18px;accent-color:#ff3b30}
+.cancelled-badge{background:#fef2f2;color:#ff3b30;font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;margin-left:4px}
+.teams-disabled{opacity:.25;pointer-events:none}
 
 /* Sokketsu confirm */
-.rep-confirm-box{background:var(--red-bg);border:1.5px solid #fca5a5;border-radius:12px;padding:16px;margin-bottom:14px;text-align:center}
-.rep-confirm-box .rep-title{font-size:11px;color:var(--red);font-weight:700;margin-bottom:8px}
-.rep-confirm-box .rep-name{font-size:18px;font-weight:800;margin-bottom:2px}
-.rep-confirm-box .rep-email{font-size:12px;color:#888;word-break:break-all}
-.btn-send-sokketsu{width:100%;padding:14px;border:none;border-radius:12px;background:var(--red);color:#fff;font-size:15px;font-weight:700;cursor:pointer}
+.rep-confirm-box{background:#fef2f2;border-radius:12px;padding:16px;margin-bottom:16px;text-align:center}
+.rep-confirm-box .rep-title{font-size:11px;color:#ff3b30;font-weight:600;margin-bottom:8px}
+.rep-confirm-box .rep-name{font-size:20px;font-weight:700}
+.rep-confirm-box .rep-email{font-size:13px;color:#86868b;word-break:break-all;margin-top:2px}
+.btn-send-sokketsu{width:100%;padding:14px;border:none;border-radius:12px;background:#ff3b30;color:#fff;font-size:17px;font-weight:600;cursor:pointer}
 .btn-send-sokketsu:disabled{opacity:.3}
 
 /* Utility */
 .hidden{display:none!important}
-.empty-state{text-align:center;color:#bbb;padding:24px;font-size:14px}
-.error-banner{background:var(--red-bg);color:var(--red);padding:10px 14px;border-radius:10px;font-size:13px;margin-bottom:10px;display:none}
+.empty-state{text-align:center;color:#aeaeb2;padding:32px;font-size:15px}
+.error-banner{background:#fef2f2;color:#ff3b30;padding:12px 16px;border-radius:10px;font-size:13px;margin-bottom:12px;display:none}
 .error-banner.show{display:block}
 </style>
 </head>
 <body>
 
-<!-- Loading -->
 <div id="loading-overlay">
   <div class="spinner"></div>
-  <div class="loading-text" id="loading-text">データを読み込み中...</div>
+  <div class="loading-text" id="loading-text">読み込み中</div>
 </div>
 
-<!-- Confirm Overlay (Report) -->
 <div class="confirm-overlay" id="report-confirm-overlay">
   <div class="confirm-box">
-    <div class="confirm-title">この内容で報告しますか？</div>
+    <div class="confirm-title">報告内容の確認</div>
     <div id="report-confirm-body"></div>
     <div class="confirm-buttons">
-      <button class="confirm-back-btn" onclick="closeReportConfirm()">戻って修正</button>
-      <button class="confirm-send-btn" id="report-send-btn" onclick="doSubmitReport()">報告を送信</button>
+      <button class="confirm-send-btn" id="report-send-btn" onclick="doSubmitReport()">送信</button>
+      <button class="confirm-back-btn" onclick="closeReportConfirm()">戻る</button>
     </div>
   </div>
 </div>
 
-<!-- Confirm Overlay (Sokketsu) -->
 <div class="confirm-overlay" id="sokketsu-confirm-overlay">
   <div class="confirm-box">
-    <div class="confirm-title">この内容で送信しますか？</div>
+    <div class="confirm-title">予約内容の確認</div>
     <div class="rep-confirm-box">
-      <div class="rep-title">この代表者に確認メールを送信します</div>
+      <div class="rep-title">確認メール送信先</div>
       <div class="rep-name" id="sk-confirm-rep">-</div>
       <div class="rep-email" id="sk-confirm-email">-</div>
     </div>
     <div id="sokketsu-confirm-body"></div>
     <div class="confirm-buttons">
-      <button class="confirm-back-btn" onclick="closeSokketsuConfirm()">戻って修正</button>
-      <button class="btn-send-sokketsu" id="sokketsu-send-btn" onclick="doSubmitSokketsu()">送信する</button>
+      <button class="btn-send-sokketsu" id="sokketsu-send-btn" onclick="doSubmitSokketsu()">送信</button>
+      <button class="confirm-back-btn" onclick="closeSokketsuConfirm()">戻る</button>
     </div>
   </div>
 </div>
 
-<!-- Bottom Sheet -->
 <div class="bs-overlay" id="bs-overlay" onclick="closeBottomSheet()"></div>
 <div class="bottom-sheet" id="bottom-sheet">
   <div class="bs-handle"></div>
@@ -299,128 +288,131 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 </div>
 
 <div class="container">
-  <div class="header">
-    <h1>BOOKS 現場運営</h1>
-    <div class="badge" id="today-display">-</div>
-  </div>
-
   <div class="error-banner" id="error-banner"></div>
 
-  <!-- Screen 1: Venue Selection -->
+  <!-- 1: Venue Select -->
   <div id="screen-venue-select">
+    <div class="header">
+      <h1>現場運営</h1>
+      <span class="badge" id="today-display">-</span>
+    </div>
     <div class="section">
-      <div class="section-title">&#x1F3DF; 会場を選択</div>
-      <div class="date-nav">
-        <button class="date-btn" onclick="filterVenues('unreported')">未報告</button>
-        <button class="date-btn" onclick="filterVenues('yesterday')">前日</button>
-        <button class="date-btn active" onclick="filterVenues('today')">本日</button>
-        <button class="date-btn" onclick="filterVenues('tomorrow')">翌日</button>
+      <div class="section-inner">
+        <div class="date-nav">
+          <button class="date-btn" onclick="filterVenues('unreported')">未報告</button>
+          <button class="date-btn" onclick="filterVenues('yesterday')">前日</button>
+          <button class="date-btn active" onclick="filterVenues('today')">本日</button>
+          <button class="date-btn" onclick="filterVenues('tomorrow')">翌日</button>
+        </div>
       </div>
-      <div id="venue-list"><p class="empty-state">読み込み中...</p></div>
+      <div id="venue-list"><p class="empty-state">読み込み中</p></div>
     </div>
   </div>
 
-  <!-- Screen 2: Venue Dashboard -->
+  <!-- 2: Venue Dashboard -->
   <div id="screen-venue-dashboard" class="hidden">
-    <button class="back-btn" onclick="goVenueSelect()">&#x2190; 会場選択</button>
+    <button class="back-btn" onclick="goVenueSelect()">&#x2039; 会場選択</button>
     <div class="section">
-      <div class="section-title" id="venue-title">&#x1F3C0; 大会一覧</div>
+      <div class="section-inner">
+        <div class="section-title" id="venue-title">大会</div>
+      </div>
       <div id="tournament-list"></div>
     </div>
-    <div class="section" id="history-section">
-      <div class="section-title">&#x26A1; 本日の即決予約</div>
-      <div id="history-list"><p class="empty-state">読み込み中...</p></div>
+    <div class="section">
+      <div class="section-inner">
+        <div class="section-title">即決予約</div>
+      </div>
+      <div id="history-list"><p class="empty-state">読み込み中</p></div>
     </div>
-    <button class="report-btn" onclick="goReport()">&#x1F4CB; 報告を入力する</button>
+    <button class="report-btn" onclick="goReport()">報告を入力</button>
   </div>
 
-  <!-- Screen 3: Team List -->
+  <!-- 3: Team List -->
   <div id="screen-team-list" class="hidden">
-    <button class="back-btn" onclick="goVenueDashboard()">&#x2190; 大会一覧</button>
+    <button class="back-btn" onclick="goVenueDashboard()">&#x2039; 大会一覧</button>
     <div class="section">
-      <div class="section-title" id="team-list-title">-</div>
+      <div class="section-inner">
+        <div class="section-title" id="team-list-title">-</div>
+      </div>
       <div id="team-list"></div>
     </div>
   </div>
 
-  <!-- Screen 4: Sokketsu Form -->
+  <!-- 4: Sokketsu -->
   <div id="screen-sokketsu" class="hidden">
-    <button class="back-btn" onclick="goTeamList()">&#x2190; チーム一覧</button>
-    <div class="header" style="background:linear-gradient(135deg,#e17055,#d63031)">
-      <h1>&#x26A1; 即決予約</h1>
-      <div class="badge" id="sk-team-badge">-</div>
+    <button class="back-btn" onclick="goTeamList()">&#x2039; チーム一覧</button>
+    <div class="header" style="background:#ff3b30">
+      <h1>即決予約</h1>
+      <span class="badge" id="sk-team-badge">-</span>
     </div>
-    <div class="section">
-      <div class="section-title">&#x1F3C0; チーム情報</div>
-      <div class="bs-info-grid">
-        <div class="bs-info-item"><div class="bs-info-label">チーム</div><div class="bs-info-value" id="sk-disp-team">-</div></div>
-        <div class="bs-info-item"><div class="bs-info-label">代表者</div><div class="bs-info-value" id="sk-disp-rep">-</div></div>
-        <div class="bs-info-item"><div class="bs-info-label">電話番号</div><div class="bs-info-value" id="sk-disp-phone">-</div></div>
-        <div class="bs-info-item"><div class="bs-info-label">メール</div><div class="bs-info-value" id="sk-disp-email" style="font-size:11px;word-break:break-all">-</div></div>
+    <div class="section"><div class="section-inner">
+      <div class="section-title">チーム</div>
+      <div class="bs-grid">
+        <div class="bs-cell"><div class="bs-cell-label">チーム</div><div class="bs-cell-value" id="sk-disp-team">-</div></div>
+        <div class="bs-cell"><div class="bs-cell-label">代表者</div><div class="bs-cell-value" id="sk-disp-rep">-</div></div>
+        <div class="bs-cell"><div class="bs-cell-label">電話番号</div><div class="bs-cell-value" id="sk-disp-phone">-</div></div>
+        <div class="bs-cell"><div class="bs-cell-label">メール</div><div class="bs-cell-value" id="sk-disp-email" style="font-size:11px;word-break:break-all">-</div></div>
       </div>
-    </div>
-    <div class="section">
-      <div class="section-title">&#x1F522; 何枠？</div>
+    </div></div>
+    <div class="section"><div class="section-inner">
+      <div class="section-title">枠数</div>
       <div class="type-selector" id="sk-type-selector"></div>
-    </div>
-    <div class="section">
-      <div class="section-title">&#x1F4C5; 予約内容</div>
-      <div class="form-group"><label>入力者名 <span class="req">必須</span></label><input type="text" id="sk-staff-name" placeholder="あなたの名前"></div>
+      <div class="form-group"><label>入力者名 <span class="req">*</span></label><input type="text" id="sk-staff-name" placeholder="名前"></div>
       <div id="sk-booking-slots"></div>
-    </div>
-    <div class="grand-total-box" id="sk-total-section">
-      <div class="gt-title">お支払い合計</div>
+    </div></div>
+    <div class="grand-total-box">
+      <div class="gt-title">合計</div>
       <div id="sk-total-breakdown"></div>
       <div class="gt-amount" id="sk-grand-total">-</div>
     </div>
-    <button class="btn-sokketsu" style="width:100%" onclick="showSokketsuConfirm()">確認画面へ</button>
+    <button class="btn-danger" onclick="showSokketsuConfirm()">確認画面へ</button>
     <button class="confirm-back-btn" style="margin-top:8px" onclick="goTeamList()">キャンセル</button>
   </div>
 
-  <!-- Screen 5: Report Form -->
+  <!-- 5: Report -->
   <div id="screen-report" class="hidden">
-    <button class="back-btn" onclick="goVenueDashboard()">&#x2190; ダッシュボード</button>
-    <div class="section">
-      <div class="section-title">&#x1F4CB; 報告者</div>
-      <div class="form-group" style="margin-bottom:0"><label>報告者名 <span class="req">必須</span></label><input type="text" id="report-staff-name" placeholder="あなたの名前"></div>
-    </div>
-    <div class="section">
-      <div class="section-title">&#x1F3C0; 運営報告</div>
+    <button class="back-btn" onclick="goVenueDashboard()">&#x2039; ダッシュボード</button>
+    <div class="section"><div class="section-inner">
+      <div class="section-title">報告者</div>
+      <div class="form-group" style="margin:0"><label>名前 <span class="req">*</span></label><input type="text" id="report-staff-name" placeholder="名前"></div>
+    </div></div>
+    <div class="section"><div class="section-inner">
+      <div class="section-title">運営報告</div>
       <div id="report-blocks-area"></div>
-    </div>
-    <div class="section">
-      <div class="section-title">&#x1F464; スタッフ勤務</div>
-      <div class="normal-work-setting">
-        <div class="setting-title">通常勤務の時間</div>
-        <div class="normal-work-inputs">
+    </div></div>
+    <div class="section"><div class="section-inner">
+      <div class="section-title">スタッフ勤務</div>
+      <div class="nw-box">
+        <div class="nw-title">通常勤務</div>
+        <div class="nw-inputs">
           <div><div class="nw-label">出勤</div><input type="time" id="nw-start" value="09:00"></div>
           <div><div class="nw-label">退勤</div><input type="time" id="nw-end" value="18:00"></div>
-          <div><div class="nw-label">休憩(分)</div><input type="number" id="nw-break" value="60" min="0" step="15"></div>
+          <div><div class="nw-label">休憩</div><input type="number" id="nw-break" value="60" min="0" step="15"></div>
         </div>
-        <button class="apply-all-btn" onclick="applyAllNormal()">全員に通常勤務を適用</button>
+        <button class="apply-btn" onclick="applyAllNormal()">全員に適用</button>
       </div>
       <div id="staff-area"></div>
-    </div>
+    </div></div>
+    <div class="section"><div class="section-inner">
+      <div class="section-title">現場報告</div>
+      <div class="form-group"><label>アクシデント</label><textarea id="accident-report" placeholder="事故・怪我・トラブル"></textarea></div>
+      <div class="form-group"><label>その他</label><textarea id="other-report" placeholder="連絡事項"></textarea></div>
+    </div></div>
     <div class="section">
-      <div class="section-title">&#x1F4DD; 現場報告</div>
-      <div class="form-group"><label>&#x26A0;&#xFE0F; アクシデント報告</label><textarea id="accident-report" placeholder="事故・怪我・トラブル等"></textarea></div>
-      <div class="form-group"><label>&#x1F4CB; その他報告</label><textarea id="other-report" placeholder="連絡事項・気になった点"></textarea></div>
-    </div>
-    <div class="section">
-      <div class="section-title">&#x2705; 最終チェック</div>
+      <div class="section-inner"><div class="section-title">最終チェック</div></div>
       <div id="check-items-area"></div>
     </div>
-    <button class="report-btn" onclick="showReportConfirm()">完了報告を送信</button>
+    <button class="report-btn" onclick="showReportConfirm()">報告を送信</button>
   </div>
 
-  <!-- Screen 6: Done -->
+  <!-- 6: Done -->
   <div id="screen-done" class="hidden">
     <div class="done-screen">
-      <div class="done-check">&#x2713;</div>
+      <div class="done-icon">&#x2713;</div>
       <div class="done-title" id="done-title">完了</div>
       <div class="done-subtitle" id="done-subtitle"></div>
       <div class="done-error hidden" id="done-error"></div>
-      <button class="done-btn" onclick="location.reload()">トップに戻る</button>
+      <button class="done-btn" onclick="location.reload()">戻る</button>
     </div>
   </div>
 </div>
@@ -432,7 +424,7 @@ let venueData=null,selectedVenue=null,selectedVenueIndex=-1,selectedBlockIndex=-
 
 document.addEventListener('DOMContentLoaded',loadData);
 
-async function loadData(){showLoading('会場データを取得中...');try{var r=await fetch(API_URL+'?action=getVenueReport');var d=await r.json();if(d.error){showError(d.error);return}venueData=d;document.getElementById('today-display').textContent=d.todayDisplay||'';renderVenueList()}catch(e){showError('データの取得に失敗: '+e.message)}finally{hideLoading()}}
+async function loadData(){showLoading('読み込み中');try{var r=await fetch(API_URL+'?action=getVenueReport');var d=await r.json();if(d.error){showError(d.error);return}venueData=d;document.getElementById('today-display').textContent=d.todayDisplay||'';renderVenueList()}catch(e){showError('取得失敗: '+e.message)}finally{hideLoading()}}
 
 function showScreen(id){['screen-venue-select','screen-venue-dashboard','screen-team-list','screen-sokketsu','screen-report','screen-done'].forEach(function(s){document.getElementById(s).classList.toggle('hidden',s!==id)});window.scrollTo(0,0)}
 function goVenueSelect(){showScreen('screen-venue-select')}
@@ -441,73 +433,72 @@ function goTeamList(){showScreen('screen-team-list')}
 
 function filterVenues(f){currentFilter=f;var btns=document.querySelectorAll('.date-btn');var labels=['unreported','yesterday','today','tomorrow'];btns.forEach(function(b,i){b.classList.toggle('active',labels[i]===f)});if(f==='unreported')loadUnreportedVenues();else renderVenueList()}
 
-function renderVenueList(){var el=document.getElementById('venue-list');var venues=(venueData&&venueData.venues)||[];var filtered=venues.filter(function(v){if(currentFilter==='yesterday')return v.dayCategory==='yesterday';if(currentFilter==='tomorrow')return v.dayCategory==='tomorrow';return v.dayCategory==='today'});if(!filtered.length){var msgs={yesterday:'前日の会場はありません',today:'本日の会場はありません',tomorrow:'翌日の会場はありません'};el.innerHTML='<p class="empty-state">'+(msgs[currentFilter]||'該当なし')+'</p>';return}el.innerHTML=filtered.map(function(v){var ri=venues.indexOf(v);var bc=(v.blocks||[]).length;var cls='venue-card'+(v.completed?' venue-done':'');var dl=v.dateStr?'('+v.dateStr+') ':'';return'<div class="'+cls+'" onclick="selectVenue('+ri+')"><div class="venue-info"><div class="venue-name">'+esc(dl+v.sheetName.replace(/^\d+日\s*/,''))+'</div><div class="venue-meta">'+bc+' 大会</div></div>'+(v.completed?'<div class="venue-status">報告済</div>':'')+'<div class="venue-arrow">&#x276F;</div></div>'}).join('')}
+function renderVenueList(){var el=document.getElementById('venue-list');var venues=(venueData&&venueData.venues)||[];var filtered=venues.filter(function(v){if(currentFilter==='yesterday')return v.dayCategory==='yesterday';if(currentFilter==='tomorrow')return v.dayCategory==='tomorrow';return v.dayCategory==='today'});if(!filtered.length){el.innerHTML='<p class="empty-state">会場はありません</p>';return}el.innerHTML=filtered.map(function(v){var ri=venues.indexOf(v);var bc=(v.blocks||[]).length;return'<div class="card'+(v.completed?' done':'')+'" onclick="selectVenue('+ri+')"><div><div class="v-name">'+esc(v.sheetName.replace(/^\d+日\s*/,''))+'</div><div class="v-meta">'+bc+'大会</div></div>'+(v.completed?'<span class="v-badge">報告済</span>':'')+'<span class="card-arrow">&#x203A;</span></div>'}).join('')}
 
-function loadUnreportedVenues(){var el=document.getElementById('venue-list');el.innerHTML='<p class="empty-state">取得中...</p>';fetch(API_URL+'?action=getUnreported').then(function(r){return r.json()}).then(function(d){if(d.error){el.innerHTML='<p class="empty-state" style="color:var(--red)">'+esc(d.error)+'</p>';return}var list=d.unreported||[];if(!list.length){el.innerHTML='<p class="empty-state">未報告なし</p>';return}el.innerHTML=list.map(function(v){return'<div class="venue-card" onclick="loadAndSelectVenue(\''+esc(v.spreadsheetId)+'\',\''+esc(v.sheetName)+'\')"><div class="venue-info"><div class="venue-name">('+esc(v.dateStr)+') '+esc(v.sheetName.replace(/^\d+日\s*/,''))+'</div><div class="venue-meta">'+v.blockCount+' 大会 <span style="color:var(--red)">未報告</span></div></div><div class="venue-arrow">&#x276F;</div></div>'}).join('')}).catch(function(e){el.innerHTML='<p class="empty-state" style="color:var(--red)">取得エラー</p>'})}
+function loadUnreportedVenues(){var el=document.getElementById('venue-list');el.innerHTML='<p class="empty-state">取得中...</p>';fetch(API_URL+'?action=getUnreported').then(function(r){return r.json()}).then(function(d){if(d.error){el.innerHTML='<p class="empty-state">'+esc(d.error)+'</p>';return}var list=d.unreported||[];if(!list.length){el.innerHTML='<p class="empty-state">未報告なし</p>';return}el.innerHTML=list.map(function(v){return'<div class="card" onclick="loadAndSelectVenue(\''+esc(v.spreadsheetId)+'\',\''+esc(v.sheetName)+'\')"><div><div class="v-name">'+esc(v.dateStr)+' '+esc(v.sheetName.replace(/^\d+日\s*/,''))+'</div><div class="v-meta">'+v.blockCount+'大会</div></div><span class="card-arrow">&#x203A;</span></div>'}).join('')}).catch(function(e){el.innerHTML='<p class="empty-state">エラー</p>'})}
 
-function loadAndSelectVenue(ssId,sn){var venues=(venueData&&venueData.venues)||[];for(var i=0;i<venues.length;i++){if(venues[i].spreadsheetId===ssId&&venues[i].sheetName===sn){selectVenue(i);return}}showLoading('読み込み中...');fetch(API_URL+'?action=getVenueBySheet&ssId='+encodeURIComponent(ssId)+'&sheetName='+encodeURIComponent(sn)).then(function(r){return r.json()}).then(function(d){hideLoading();if(d.error){showError(d.error);return}if(!venueData)venueData={venues:[]};if(!venueData.venues)venueData.venues=[];venueData.venues.push(d.venue);if(d.memberList)venueData.memberList=d.memberList;selectVenue(venueData.venues.length-1)}).catch(function(e){hideLoading();showError('取得エラー: '+e.message)})}
+function loadAndSelectVenue(ssId,sn){var venues=(venueData&&venueData.venues)||[];for(var i=0;i<venues.length;i++){if(venues[i].spreadsheetId===ssId&&venues[i].sheetName===sn){selectVenue(i);return}}showLoading('読み込み中');fetch(API_URL+'?action=getVenueBySheet&ssId='+encodeURIComponent(ssId)+'&sheetName='+encodeURIComponent(sn)).then(function(r){return r.json()}).then(function(d){hideLoading();if(d.error){showError(d.error);return}if(!venueData)venueData={venues:[]};if(!venueData.venues)venueData.venues=[];venueData.venues.push(d.venue);if(d.memberList)venueData.memberList=d.memberList;selectVenue(venueData.venues.length-1)}).catch(function(e){hideLoading();showError(e.message)})}
 
 function selectVenue(idx){selectedVenueIndex=idx;selectedVenue=venueData.venues[idx];renderVenueDashboard();loadHistory();showScreen('screen-venue-dashboard')}
 
-function renderVenueDashboard(){var v=selectedVenue;document.getElementById('venue-title').innerHTML='&#x1F3C0; '+esc(v.sheetName);var blocks=v.blocks||[];var el=document.getElementById('tournament-list');if(!blocks.length){el.innerHTML='<p class="empty-state">大会データがありません</p>';return}el.innerHTML=blocks.map(function(b,bi){var tc=(b.teams||[]).length;var time=b.startTime||'';var name=b.tournamentName||'大会 '+(bi+1);var prizes=b.prizes||[];var pl=['優勝賞品','副賞商品','GT景品'];var ph=prizes.length?'<div style="margin-top:6px">'+prizes.map(function(p,pi){return'<span class="prize-badge">'+pl[pi]+': '+esc(p)+'</span>'}).join('')+'</div>':'';return'<div class="tournament-card" onclick="selectTournament('+bi+')"><div class="tc-time">'+esc(time)+'</div><div class="tc-info"><div class="tc-name">'+esc(name)+'</div><div class="tc-sub">'+esc(b.tournamentId||'')+' / '+tc+'チーム</div>'+ph+'</div><div class="tc-arrow">&#x276F;</div></div>'}).join('')}
+function renderVenueDashboard(){var v=selectedVenue;document.getElementById('venue-title').textContent=v.sheetName;var blocks=v.blocks||[];var el=document.getElementById('tournament-list');if(!blocks.length){el.innerHTML='<p class="empty-state">大会なし</p>';return}el.innerHTML=blocks.map(function(b,bi){var tc=(b.teams||[]).length;var prizes=b.prizes||[];var pl=['優勝賞品','副賞商品','GT景品'];var ph=prizes.length?'<div class="prize-row">'+prizes.map(function(p,pi){return'<span class="prize-tag">'+pl[pi]+': '+esc(p)+'</span>'}).join('')+'</div>':'';return'<div class="card" onclick="selectTournament('+bi+')"><div class="t-time">'+esc(b.startTime||'')+'</div><div class="t-info"><div class="t-name">'+esc(b.tournamentName||'大会')+'</div><div class="t-sub">'+tc+'チーム</div>'+ph+'</div><span class="card-arrow">&#x203A;</span></div>'}).join('')}
 
-function loadHistory(){var el=document.getElementById('history-list');el.innerHTML='<p class="empty-state">読み込み中...</p>';fetch(API_URL+'?action=getHistory').then(function(r){return r.json()}).then(function(d){historyItems=d.items||[];renderHistory()}).catch(function(){el.innerHTML='<p class="empty-state">履歴取得失敗</p>'})}
+function loadHistory(){var el=document.getElementById('history-list');el.innerHTML='<p class="empty-state">読み込み中</p>';fetch(API_URL+'?action=getHistory').then(function(r){return r.json()}).then(function(d){historyItems=d.items||[];renderHistory()}).catch(function(){el.innerHTML='<p class="empty-state">取得失敗</p>'})}
 
-function renderHistory(){var el=document.getElementById('history-list');if(!historyItems.length){el.innerHTML='<p class="empty-state">本日の即決予約はありません</p>';return}el.innerHTML=historyItems.map(function(h,i){var ef=!h.emailOk;return'<div class="history-card"><div style="flex:1"><div class="hc-time">'+esc(h.time)+' / '+esc(h.staffName)+'</div><div class="hc-team">'+esc(h.team)+' ('+h.slotCount+'枠)</div><div class="hc-detail">'+esc(h.tournamentName)+'</div></div><div class="hc-status"><div class="status-dot '+(h.cwOk?'ok':'ng')+'"></div><div class="status-dot '+(h.emailOk?'ok':'ng')+'"></div>'+(ef?'<button class="resend-btn" id="resend-'+i+'" onclick="resendEmail('+i+')">再送</button>':'')+'</div></div>'}).join('')}
+function renderHistory(){var el=document.getElementById('history-list');if(!historyItems.length){el.innerHTML='<p class="empty-state">なし</p>';return}el.innerHTML=historyItems.map(function(h,i){return'<div class="history-item"><div><div class="hi-time">'+esc(h.time)+'</div><div class="hi-team">'+esc(h.team)+'</div><div class="hi-detail">'+h.slotCount+'枠</div></div><div class="hi-status"><div class="dot '+(h.cwOk?'ok':'ng')+'"></div><div class="dot '+(h.emailOk?'ok':'ng')+'"></div>'+(!h.emailOk?'<button class="resend-btn" id="resend-'+i+'" onclick="resendEmail('+i+')">再送</button>':'')+'</div></div>'}).join('')}
 
-async function resendEmail(idx){var h=historyItems[idx];var btn=document.getElementById('resend-'+idx);if(!h||!btn)return;btn.disabled=true;btn.textContent='送信中...';try{var r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'resendEmail',email:h.email,rep:h.rep,team:h.team,phone:h.phone})});var res=await r.json();if(res.email==='OK'){btn.textContent='完了';btn.style.background='var(--green)'}else{btn.textContent='失敗';btn.disabled=false}}catch(e){btn.textContent='失敗';btn.disabled=false}}
+async function resendEmail(idx){var h=historyItems[idx];var btn=document.getElementById('resend-'+idx);if(!h||!btn)return;btn.disabled=true;btn.textContent='...';try{var r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'resendEmail',email:h.email,rep:h.rep,team:h.team,phone:h.phone})});var res=await r.json();if(res.email==='OK'){btn.textContent='完了';btn.style.background='#34c759'}else{btn.textContent='失敗';btn.disabled=false}}catch(e){btn.textContent='失敗';btn.disabled=false}}
 
 function selectTournament(bi){selectedBlockIndex=bi;renderTeamList();showScreen('screen-team-list')}
 
-function renderTeamList(){var b=selectedVenue.blocks[selectedBlockIndex];var time=b.startTime||'';var name=b.tournamentName||'大会';var prizes=b.prizes||[];var pl2=['優勝賞品','副賞商品','GT景品'];var ph=prizes.length?'<div style="margin-top:8px">'+prizes.map(function(p,pi){return'<span class="prize-badge">'+pl2[pi]+': '+esc(p)+'</span>'}).join('')+'</div>':'';document.getElementById('team-list-title').innerHTML=esc(time+' '+name)+' <span style="font-size:12px;color:var(--text3);font-weight:400">'+(b.teams||[]).length+'チーム</span>'+ph;var el=document.getElementById('team-list');var teams=b.teams||[];if(!teams.length){el.innerHTML='<p class="empty-state">チームがありません</p>';return}el.innerHTML=teams.map(function(t,ti){var price=t.price?'\xA5'+Number(String(t.price).replace(/[^0-9]/g,'')).toLocaleString():'';var rd=t.rental||'';var rf=t.rentalInput||'';var rentalDisplay=rf||rd;var remittance=t.remittance?'\xA5'+Number(String(t.remittance).replace(/[^0-9]/g,'')).toLocaleString():'';var pm=t.paymentMethod||'';var salesBadge=t.salesActivity?'<span class="tc-sales-badge">'+esc(t.salesActivity)+'</span>':'';var sc='',sl='-',sbc='unknown';if(pm){sc='status-paid';sl=pm;sbc='paid'}else if(price){sc='status-unpaid';sl='未入力';sbc='unpaid'}return'<div class="team-card '+sc+'" onclick="openTeamDetail('+ti+')"><div class="tc-row1"><span class="tc-team-name">'+esc(t.teamName)+'</span><span class="tc-app-no">#'+esc(t.applicationNo)+'</span></div><div class="tc-row2"><span class="tc-rep">'+esc(t.rep||'-')+'</span><span class="tc-phone">'+esc(t.phone||'')+'</span></div><div class="tc-row3">'+(rentalDisplay?'<span class="tc-rental">'+esc(rentalDisplay)+'</span>':'<span style="font-size:11px;color:var(--text3)">レンタルなし</span>')+salesBadge+'<span class="tc-price">'+(remittance||price)+'</span><span class="tc-pay-status '+sbc+'">'+sl+'</span></div></div>'}).join('')}
+function renderTeamList(){var b=selectedVenue.blocks[selectedBlockIndex];var prizes=b.prizes||[];var pl2=['優勝賞品','副賞商品','GT景品'];var ph=prizes.length?'<div style="margin-top:8px">'+prizes.map(function(p,pi){return'<span class="prize-tag">'+pl2[pi]+': '+esc(p)+'</span> '}).join('')+'</div>':'';document.getElementById('team-list-title').innerHTML=esc((b.startTime||'')+' '+(b.tournamentName||'大会'))+ph;var el=document.getElementById('team-list');var teams=b.teams||[];if(!teams.length){el.innerHTML='<p class="empty-state">チームなし</p>';return}el.innerHTML=teams.map(function(t,ti){var price=t.price?'\xA5'+Number(String(t.price).replace(/[^0-9]/g,'')).toLocaleString():'';var rd=t.rentalInput||t.rental||'';var rem=t.remittance?'\xA5'+Number(String(t.remittance).replace(/[^0-9]/g,'')).toLocaleString():'';var pm=t.paymentMethod||'';var sc='',sl='-',sbc='unknown';if(pm){sc='s-green';sl=pm;sbc='paid'}else if(price){sc='s-red';sl='未入力';sbc='unpaid'}var sb=t.salesActivity?'<span class="sales-tag">'+esc(t.salesActivity)+'</span>':'';return'<div class="team-card '+sc+'" onclick="openTeamDetail('+ti+')"><div class="t-row"><span class="team-name">'+esc(t.teamName)+'</span><span class="app-no">#'+esc(t.applicationNo)+'</span></div><div class="t-row"><span class="rep-name">'+esc(t.rep||'-')+'</span><span class="phone">'+esc(t.phone||'')+'</span></div><div class="t-row">'+(rd?'<span class="rental-tag">'+esc(rd)+'</span>':'<span style="color:#d2d2d7;font-size:11px">-</span>')+sb+'<span class="price">'+(rem||price)+'</span><span class="pay-badge '+sbc+'">'+sl+'</span></div></div>'}).join('')}
 
-function openTeamDetail(ti){selectedTeamIndex=ti;var b=selectedVenue.blocks[selectedBlockIndex];var t=b.teams[ti];var price=t.price?'\xA5'+Number(String(t.price).replace(/[^0-9]/g,'')).toLocaleString():'-';var h='<div class="bs-header"><div><div class="bs-team-name">'+esc(t.teamName)+'</div><div style="font-size:12px;color:var(--text3);margin-top:4px">#'+esc(t.applicationNo)+' / '+esc(b.tournamentName)+'</div></div><button class="bs-close" onclick="closeBottomSheet()">&#x2715;</button></div>';h+='<div class="bs-section"><div class="bs-section-title">チーム情報</div><div class="bs-info-grid"><div class="bs-info-item"><div class="bs-info-label">代表者</div><div class="bs-info-value">'+esc(t.rep||'-')+'</div></div><div class="bs-info-item"><div class="bs-info-label">フリガナ</div><div class="bs-info-value">'+esc(t.furigana||'-')+'</div></div><div class="bs-info-item"><div class="bs-info-label">電話番号</div><div class="bs-info-value" style="color:var(--blue)">'+esc(t.phone||'-')+'</div></div><div class="bs-info-item"><div class="bs-info-label">申請番号</div><div class="bs-info-value">'+esc(t.applicationNo||'-')+'</div></div><div class="bs-info-item"><div class="bs-info-label">レンタル(DB)</div><div class="bs-info-value" style="color:var(--orange)">'+esc(t.rental||'なし')+'</div></div><div class="bs-info-item"><div class="bs-info-label">参加費</div><div class="bs-info-value" style="font-size:18px;color:var(--accent2)">'+price+'</div></div></div></div>';h+='<div class="bs-divider"></div>';h+='<div class="bs-section"><div class="bs-section-title">運営入力</div><div class="bs-form-row"><div class="bs-form-group"><label>営業活動</label>'+buildSelect('bs-sales',['','なし','即決1','即決2','即決3','即決4','即決5'],t.salesActivity)+'</div><div class="bs-form-group"><label>順位</label>'+buildSelect('bs-rank',['','1位','2位','3位','4位','5位','6位以下'],t.rank)+'</div></div><div class="bs-form-group"><label>備考</label><input type="text" id="bs-remarks" value="'+esc(t.remarks||'')+'" placeholder="備考"></div></div>';h+='<div class="bs-pay-box"><div class="pay-label">&#x1F4B0; 受取・レンタル</div><div class="bs-form-group" style="margin-bottom:10px"><label style="color:var(--orange)">レンタル内容</label><input type="text" id="bs-rental-input" value="'+esc(t.rentalInput||'')+'" placeholder="例: ビブス2セット, ボール1球" style="border-color:rgba(253,203,110,.3)"></div><div class="bs-form-row"><div class="bs-form-group"><label style="color:var(--orange)">送金額</label><input type="number" id="bs-remittance" placeholder="金額" inputmode="numeric" value="'+esc(t.remittance||'')+'" style="border-color:rgba(253,203,110,.3);font-size:18px;font-weight:700"></div><div class="bs-form-group"><label style="color:var(--orange)">受取方法</label><select id="bs-payment-method" style="border-color:rgba(253,203,110,.3)"><option value=""'+(!t.paymentMethod?' selected':'')+'>---</option><option value="現金"'+(t.paymentMethod==='現金'?' selected':'')+'>現金</option><option value="端末決済"'+(t.paymentMethod==='端末決済'?' selected':'')+'>端末決済</option></select></div></div></div>';h+='<div class="bs-actions"><button class="btn-save" onclick="saveTeamData()">&#x1F4BE; 保存</button><button class="btn-sokketsu" onclick="goSokketsu()">&#x26A1; 即決予約へ</button></div>';document.getElementById('bs-content').innerHTML=h;document.getElementById('bs-overlay').classList.add('show');setTimeout(function(){document.getElementById('bottom-sheet').classList.add('show')},10)}
+function openTeamDetail(ti){selectedTeamIndex=ti;var b=selectedVenue.blocks[selectedBlockIndex];var t=b.teams[ti];var price=t.price?'\xA5'+Number(String(t.price).replace(/[^0-9]/g,'')).toLocaleString():'-';var h='<div class="bs-head" style="position:relative"><div class="bs-name">'+esc(t.teamName)+'</div><div class="bs-sub">#'+esc(t.applicationNo)+' '+esc(b.tournamentName||'')+'</div><button class="bs-close" onclick="closeBottomSheet()">&#x2715;</button></div>';h+='<div class="bs-group"><div class="bs-label">情報</div><div class="bs-grid"><div class="bs-cell"><div class="bs-cell-label">代表者</div><div class="bs-cell-value">'+esc(t.rep||'-')+'</div></div><div class="bs-cell"><div class="bs-cell-label">フリガナ</div><div class="bs-cell-value">'+esc(t.furigana||'-')+'</div></div><div class="bs-cell"><div class="bs-cell-label">電話番号</div><div class="bs-cell-value" style="color:#007aff">'+esc(t.phone||'-')+'</div></div><div class="bs-cell"><div class="bs-cell-label">申請番号</div><div class="bs-cell-value">'+esc(t.applicationNo||'-')+'</div></div><div class="bs-cell"><div class="bs-cell-label">レンタル(DB)</div><div class="bs-cell-value" style="color:#af8700">'+esc(t.rental||'なし')+'</div></div><div class="bs-cell"><div class="bs-cell-label">参加費</div><div class="bs-cell-value" style="font-size:17px">'+price+'</div></div></div></div>';h+='<div class="bs-sep"></div>';h+='<div class="bs-group"><div class="bs-label">運営入力</div><div class="bs-row"><div class="bs-field"><label>営業</label>'+buildSelect('bs-sales',['','なし','即決1','即決2','即決3','即決4','即決5'],t.salesActivity)+'</div><div class="bs-field"><label>順位</label>'+buildSelect('bs-rank',['','1位','2位','3位','4位','5位','6位以下'],t.rank)+'</div></div><div class="bs-field"><label>備考</label><input type="text" id="bs-remarks" value="'+esc(t.remarks||'')+'" placeholder="備考"></div></div>';h+='<div class="bs-pay"><div class="bs-pay-title">受取・レンタル</div><div class="bs-field"><label>レンタル内容</label><input type="text" id="bs-rental-input" value="'+esc(t.rentalInput||'')+'" placeholder="ビブス2セット, ボール1球"></div><div class="bs-row"><div class="bs-field"><label>送金額</label><input type="number" id="bs-remittance" inputmode="numeric" value="'+esc(t.remittance||'')+'" placeholder="金額" style="font-weight:700"></div><div class="bs-field"><label>受取方法</label><select id="bs-payment-method"><option value=""'+(!t.paymentMethod?' selected':'')+'>---</option><option value="現金"'+(t.paymentMethod==='現金'?' selected':'')+'>現金</option><option value="端末決済"'+(t.paymentMethod==='端末決済'?' selected':'')+'>端末決済</option></select></div></div></div>';h+='<div class="bs-btns"><button class="btn-primary" onclick="saveTeamData()">保存</button><button class="btn-danger" onclick="goSokketsu()">即決予約</button></div>';document.getElementById('bs-content').innerHTML=h;document.getElementById('bs-overlay').classList.add('show');setTimeout(function(){document.getElementById('bottom-sheet').classList.add('show')},10)}
 
 function closeBottomSheet(){document.getElementById('bottom-sheet').classList.remove('show');setTimeout(function(){document.getElementById('bs-overlay').classList.remove('show')},300)}
-
 function buildSelect(id,opts,sel){var h='<select id="'+id+'">';opts.forEach(function(o){h+='<option value="'+esc(o)+'"'+(o===sel?' selected':'')+'>'+(o||'---')+'</option>'});return h+'</select>'}
 
-async function saveTeamData(){var b=selectedVenue.blocks[selectedBlockIndex];var t=b.teams[selectedTeamIndex];var sv=document.getElementById('bs-sales').value;var rv=document.getElementById('bs-rank').value;var rm=document.getElementById('bs-remarks').value;var ri=document.getElementById('bs-rental-input').value;var re=document.getElementById('bs-remittance').value;var pm=document.getElementById('bs-payment-method').value;t.salesActivity=sv;t.rank=rv;t.remarks=rm;t.rentalInput=ri;t.remittance=re;t.paymentMethod=pm;showLoading('保存中...');try{var td={teamRow:t.teamRow,salesActivity:sv,rank:rv,remarks:rm,rentalInput:ri,remittance:re,paymentMethod:pm};var p={action:'submitReport',spreadsheetId:selectedVenue.spreadsheetId,sheetName:selectedVenue.sheetName,teams:[td],staffList:[],markComplete:false};var r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(p)});var res=await r.json();hideLoading();if(res.error){alert('保存エラー: '+res.error);return}closeBottomSheet();renderTeamList()}catch(e){hideLoading();alert('保存エラー: '+e.message)}}
+async function saveTeamData(){var b=selectedVenue.blocks[selectedBlockIndex];var t=b.teams[selectedTeamIndex];var sv=document.getElementById('bs-sales').value,rv=document.getElementById('bs-rank').value,rm=document.getElementById('bs-remarks').value,ri=document.getElementById('bs-rental-input').value,re=document.getElementById('bs-remittance').value,pm=document.getElementById('bs-payment-method').value;t.salesActivity=sv;t.rank=rv;t.remarks=rm;t.rentalInput=ri;t.remittance=re;t.paymentMethod=pm;showLoading('保存中');try{var p={action:'submitReport',spreadsheetId:selectedVenue.spreadsheetId,sheetName:selectedVenue.sheetName,teams:[{teamRow:t.teamRow,salesActivity:sv,rank:rv,remarks:rm,rentalInput:ri,remittance:re,paymentMethod:pm}],staffList:[],markComplete:false};var r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(p)});var res=await r.json();hideLoading();if(res.error){alert(res.error);return}closeBottomSheet();renderTeamList()}catch(e){hideLoading();alert(e.message)}}
 
-function goSokketsu(){closeBottomSheet();var b=selectedVenue.blocks[selectedBlockIndex];var t=b.teams[selectedTeamIndex];document.getElementById('sk-team-badge').textContent=t.teamName;document.getElementById('sk-disp-team').textContent=t.teamName;document.getElementById('sk-disp-rep').textContent=t.rep||'-';document.getElementById('sk-disp-phone').textContent=t.phone||'-';document.getElementById('sk-disp-email').textContent=t.email||'(取得中...)';fetchTeamEmail(t);var saved=localStorage.getItem(LS_SK_STAFF);if(saved)document.getElementById('sk-staff-name').value=saved;skSlotCount=1;var ts=document.getElementById('sk-type-selector');ts.innerHTML='';for(var i=1;i<=5;i++)ts.innerHTML+='<div class="type-btn'+(i===1?' selected':'')+'" onclick="selectSkType('+i+')">'+i+'枠</div>';renderSkSlots();showScreen('screen-sokketsu')}
+function goSokketsu(){closeBottomSheet();var b=selectedVenue.blocks[selectedBlockIndex];var t=b.teams[selectedTeamIndex];document.getElementById('sk-team-badge').textContent=t.teamName;document.getElementById('sk-disp-team').textContent=t.teamName;document.getElementById('sk-disp-rep').textContent=t.rep||'-';document.getElementById('sk-disp-phone').textContent=t.phone||'-';document.getElementById('sk-disp-email').textContent=t.email||'(取得中)';fetchTeamEmail(t);var saved=localStorage.getItem(LS_SK_STAFF);if(saved)document.getElementById('sk-staff-name').value=saved;skSlotCount=1;var ts=document.getElementById('sk-type-selector');ts.innerHTML='';for(var i=1;i<=5;i++)ts.innerHTML+='<div class="type-btn'+(i===1?' selected':'')+'" onclick="selectSkType('+i+')">'+i+'</div>';renderSkSlots();showScreen('screen-sokketsu')}
 
-async function fetchTeamEmail(team){try{var r=await fetch(API_URL+'?action=getTournaments');var d=await r.json();var ts=d.tournaments||[];for(var ti=0;ti<ts.length;ti++){var tms=ts[ti].teams||[];for(var j=0;j<tms.length;j++){if(tms[j].team===team.teamName){team.email=tms[j].email||'';team.realEmail=tms[j].realEmail||tms[j].email||'';document.getElementById('sk-disp-email').textContent=team.email||'(なし)';return}}}document.getElementById('sk-disp-email').textContent='(未取得)'}catch(e){document.getElementById('sk-disp-email').textContent='(取得失敗)'}}
+async function fetchTeamEmail(team){try{var r=await fetch(API_URL+'?action=getTournaments');var d=await r.json();var ts=d.tournaments||[];for(var ti=0;ti<ts.length;ti++){var tms=ts[ti].teams||[];for(var j=0;j<tms.length;j++){if(tms[j].team===team.teamName){team.email=tms[j].email||'';team.realEmail=tms[j].realEmail||tms[j].email||'';document.getElementById('sk-disp-email').textContent=team.email||'(なし)';return}}}document.getElementById('sk-disp-email').textContent='(未取得)'}catch(e){document.getElementById('sk-disp-email').textContent='(失敗)'}}
 
 function selectSkType(n){skSlotCount=n;document.querySelectorAll('#sk-type-selector .type-btn').forEach(function(b,i){b.classList.toggle('selected',i===n-1)});renderSkSlots()}
 
-function renderSkSlots(){var c=document.getElementById('sk-booking-slots');var h='';for(var i=1;i<=skSlotCount;i++){h+='<div class="booking-block"><div class="booking-number">予約'+i+'</div>';if(i>1)h+='<label class="copy-check"><input type="checkbox" id="sk-copy'+i+'" onchange="skApplyCopy('+i+')">予約1と同じ内容</label>';h+='<div id="sk-fields'+i+'"><div class="form-group"><label>日付 <span class="req">必須</span></label><input type="date" id="sk-date'+i+'"></div><div class="form-group"><label>会場 <span class="req">必須</span></label><input type="text" id="sk-venue'+i+'" placeholder="例: 品川区立総合体育館"></div><div class="form-row"><div class="form-group"><label>受付時間 <span class="req">必須</span></label><input type="text" id="sk-time'+i+'" placeholder="10:00"></div><div class="form-group"><label>レベル <span class="req">必須</span></label><input type="text" id="sk-level'+i+'" placeholder="エンジョイ"></div></div></div><div class="slot-payment"><div class="form-group"><label>金額（税込）<span class="req">必須</span></label><input type="number" id="sk-price'+i+'" placeholder="17000" inputmode="numeric" oninput="skCalcTotal()"></div><div class="form-group"><label>クーポン</label><select id="sk-coupon'+i+'" onchange="skCalcTotal()"><option value="0">なし</option>';[1000,2000,3000,4000,5000,8000].forEach(function(v){h+='<option value="'+v+'">'+v.toLocaleString()+'円引き</option>'});h+='</select></div><div class="rental-section"><div class="rental-title">レンタル品</div><div class="rental-item"><span class="rental-label">ビブス1セット(\xA51,000)</span><select id="sk-bib'+i+'" onchange="skCalcTotal()" style="width:70px">';for(var bn=0;bn<=10;bn++)h+='<option value="'+bn+'">'+bn+'</option>';h+='</select></div><div class="rental-item"><span class="rental-label">ボール1球(\xA5500)</span><select id="sk-ball'+i+'" onchange="skCalcTotal()" style="width:70px">';for(var bn=0;bn<=10;bn++)h+='<option value="'+bn+'">'+bn+'</option>';h+='</select></div><div class="rental-item"><span class="rental-label">シューズ1足(\xA51,500)</span><select id="sk-shoes'+i+'" onchange="skUpdateShoeSizes('+i+');skCalcTotal()" style="width:70px">';for(var sn=0;sn<=10;sn++)h+='<option value="'+sn+'">'+sn+'</option>';h+='</select></div><div id="sk-shoeSizes'+i+'"></div></div><div id="sk-slotSummary'+i+'"></div></div></div>'}c.innerHTML=h;skCalcTotal()}
+function renderSkSlots(){var c=document.getElementById('sk-booking-slots');var h='';for(var i=1;i<=skSlotCount;i++){h+='<div class="booking-block"><div class="booking-number">予約'+i+'</div>';if(i>1)h+='<label class="copy-check"><input type="checkbox" id="sk-copy'+i+'" onchange="skApplyCopy('+i+')">予約1と同じ</label>';h+='<div class="form-group"><label>日付 <span class="req">*</span></label><input type="date" id="sk-date'+i+'"></div><div class="form-group"><label>会場 <span class="req">*</span></label><input type="text" id="sk-venue'+i+'" placeholder="会場名"></div><div class="form-row"><div class="form-group"><label>受付 <span class="req">*</span></label><input type="text" id="sk-time'+i+'" placeholder="10:00"></div><div class="form-group"><label>レベル <span class="req">*</span></label><input type="text" id="sk-level'+i+'" placeholder="エンジョイ"></div></div><div class="slot-payment"><div class="form-group"><label>金額 <span class="req">*</span></label><input type="number" id="sk-price'+i+'" placeholder="17000" inputmode="numeric" oninput="skCalcTotal()"></div><div class="form-group"><label>クーポン</label><select id="sk-coupon'+i+'" onchange="skCalcTotal()"><option value="0">なし</option>';[1000,2000,3000,4000,5000,8000].forEach(function(v){h+='<option value="'+v+'">'+v.toLocaleString()+'円引</option>'});h+='</select></div><div class="rental-section"><div class="rental-title">レンタル</div><div class="rental-item"><span class="rental-label">ビブス(\xA51,000)</span><select id="sk-bib'+i+'" onchange="skCalcTotal()" style="width:60px">';for(var bn=0;bn<=10;bn++)h+='<option value="'+bn+'">'+bn+'</option>';h+='</select></div><div class="rental-item"><span class="rental-label">ボール(\xA5500)</span><select id="sk-ball'+i+'" onchange="skCalcTotal()" style="width:60px">';for(var bn=0;bn<=10;bn++)h+='<option value="'+bn+'">'+bn+'</option>';h+='</select></div><div class="rental-item"><span class="rental-label">シューズ(\xA51,500)</span><select id="sk-shoes'+i+'" onchange="skUpdateShoeSizes('+i+');skCalcTotal()" style="width:60px">';for(var sn=0;sn<=10;sn++)h+='<option value="'+sn+'">'+sn+'</option>';h+='</select></div><div id="sk-shoeSizes'+i+'"></div></div><div id="sk-slotSummary'+i+'"></div></div></div>'}c.innerHTML=h;skCalcTotal()}
 
 function skApplyCopy(n){var ck=document.getElementById('sk-copy'+n).checked;['date','venue','time','level'].forEach(function(f){var inp=document.getElementById('sk-'+f+n);if(ck){inp.value=document.getElementById('sk-'+f+'1').value;inp.readOnly=true;inp.style.opacity='.5'}else{inp.readOnly=false;inp.style.opacity=''}})}
-function skUpdateShoeSizes(s){var cnt=parseInt(document.getElementById('sk-shoes'+s).value)||0;var c=document.getElementById('sk-shoeSizes'+s);var h='';for(var n=1;n<=cnt;n++){h+='<div class="rental-item" style="padding-left:30px"><label style="font-size:12px;color:var(--text3)">'+n+'足目:</label><select id="sk-shoesize'+s+'_'+n+'"><option value="">選択</option>';for(var sz=26;sz<=29;sz+=0.5)h+='<option value="'+sz.toFixed(1)+'">'+sz.toFixed(1)+'cm</option>';h+='</select></div>'}c.innerHTML=h}
+function skUpdateShoeSizes(s){var cnt=parseInt(document.getElementById('sk-shoes'+s).value)||0;var c=document.getElementById('sk-shoeSizes'+s);var h='';for(var n=1;n<=cnt;n++){h+='<div class="rental-item" style="padding-left:24px"><span style="font-size:12px;color:#86868b">'+n+'足目</span><select id="sk-shoesize'+s+'_'+n+'" style="width:80px"><option value="">選択</option>';for(var sz=26;sz<=29;sz+=0.5)h+='<option value="'+sz.toFixed(1)+'">'+sz.toFixed(1)+'cm</option>';h+='</select></div>'}c.innerHTML=h}
 function skGetRentalTotal(i){return(parseInt(document.getElementById('sk-bib'+i).value)||0)*1000+(parseInt(document.getElementById('sk-ball'+i).value)||0)*500+(parseInt(document.getElementById('sk-shoes'+i).value)||0)*1500}
 function skGetRentalLabels(i){var items=[];var bib=parseInt(document.getElementById('sk-bib'+i).value)||0;if(bib)items.push('ビブス'+bib+'(\xA5'+(bib*1000).toLocaleString()+')');var ball=parseInt(document.getElementById('sk-ball'+i).value)||0;if(ball)items.push('ボール'+ball+'(\xA5'+(ball*500).toLocaleString()+')');var shoes=parseInt(document.getElementById('sk-shoes'+i).value)||0;if(shoes){var sizes=[];for(var n=1;n<=shoes;n++){var el=document.getElementById('sk-shoesize'+i+'_'+n);if(el&&el.value)sizes.push(el.value+'cm')}items.push('シューズ'+shoes+(sizes.length?'('+sizes.join(',')+')':'')+' \xA5'+(shoes*1500).toLocaleString())}return items}
 function skGetRentalData(i){var shoes=parseInt(document.getElementById('sk-shoes'+i).value)||0;var sizes=[];for(var n=1;n<=shoes;n++){var el=document.getElementById('sk-shoesize'+i+'_'+n);if(el&&el.value)sizes.push(el.value)}return{bibCount:parseInt(document.getElementById('sk-bib'+i).value)||0,ballCount:parseInt(document.getElementById('sk-ball'+i).value)||0,shoesCount:shoes,shoesSizes:sizes,rentalTotal:skGetRentalTotal(i),rentalLabels:skGetRentalLabels(i)}}
-function skCalcTotal(){var grand=0,bh='';for(var i=1;i<=skSlotCount;i++){var p=parseInt((document.getElementById('sk-price'+i)||{}).value)||0;var d=parseInt((document.getElementById('sk-coupon'+i)||{}).value)||0;var r=skGetRentalTotal(i);var st=p-d+r;var se=document.getElementById('sk-slotSummary'+i);if(se&&p){var sh='<div class="slot-summary"><div class="summary-row"><span>金額</span><span>\xA5'+p.toLocaleString()+'</span></div>';if(d)sh+='<div class="summary-row discount"><span>クーポン</span><span>-\xA5'+d.toLocaleString()+'</span></div>';if(r){sh+='<div class="summary-row rental"><span>レンタル</span><span>+\xA5'+r.toLocaleString()+'</span></div>';var lb=skGetRentalLabels(i);if(lb.length)sh+='<div class="rental-detail">('+lb.join(' / ')+')</div>'}sh+='<div class="summary-total"><span>この枠</span><span>\xA5'+st.toLocaleString()+'</span></div></div>';se.innerHTML=sh;bh+='<div class="gt-breakdown">予約'+i+': \xA5'+st.toLocaleString()+'</div>';grand+=st}else if(se)se.innerHTML=''}document.getElementById('sk-total-breakdown').innerHTML=bh;document.getElementById('sk-grand-total').textContent=grand?'\xA5'+grand.toLocaleString():'-'}
+function skCalcTotal(){var grand=0,bh='';for(var i=1;i<=skSlotCount;i++){var p=parseInt((document.getElementById('sk-price'+i)||{}).value)||0;var d=parseInt((document.getElementById('sk-coupon'+i)||{}).value)||0;var r=skGetRentalTotal(i);var st=p-d+r;var se=document.getElementById('sk-slotSummary'+i);if(se&&p){var sh='<div class="slot-summary"><div class="summary-row"><span>金額</span><span>\xA5'+p.toLocaleString()+'</span></div>';if(d)sh+='<div class="summary-row discount"><span>クーポン</span><span>-\xA5'+d.toLocaleString()+'</span></div>';if(r){sh+='<div class="summary-row rental"><span>レンタル</span><span>+\xA5'+r.toLocaleString()+'</span></div>';var lb=skGetRentalLabels(i);if(lb.length)sh+='<div class="rental-detail">('+lb.join(' / ')+')</div>'}sh+='<div class="summary-total"><span>小計</span><span>\xA5'+st.toLocaleString()+'</span></div></div>';se.innerHTML=sh;bh+='<div class="gt-breakdown">予約'+i+': \xA5'+st.toLocaleString()+'</div>';grand+=st}else if(se)se.innerHTML=''}document.getElementById('sk-total-breakdown').innerHTML=bh;document.getElementById('sk-grand-total').textContent=grand?'\xA5'+grand.toLocaleString():'-'}
 
-function showSokketsuConfirm(){var sn=document.getElementById('sk-staff-name').value.trim();if(!sn){alert('入力者名を入力してください');return}localStorage.setItem(LS_SK_STAFF,sn);for(var i=1;i<=skSlotCount;i++){if(!document.getElementById('sk-date'+i).value||!document.getElementById('sk-venue'+i).value.trim()||!document.getElementById('sk-time'+i).value.trim()||!document.getElementById('sk-level'+i).value.trim()||!document.getElementById('sk-price'+i).value){alert('予約'+i+'の入力が不足しています');return}}var b=selectedVenue.blocks[selectedBlockIndex];var t=b.teams[selectedTeamIndex];document.getElementById('sk-confirm-rep').textContent=t.rep||'-';document.getElementById('sk-confirm-email').textContent=t.email||t.realEmail||'(なし)';var wd=['日','月','火','水','木','金','土'];var h='';for(var i=1;i<=skSlotCount;i++){var dv=document.getElementById('sk-date'+i).value;var dd=dv;try{var dt=new Date(dv);dd=(dt.getMonth()+1)+'月'+dt.getDate()+'日('+wd[dt.getDay()]+')'}catch(e){}h+='<div class="confirm-section">';if(skSlotCount>1)h+='<div class="confirm-section-title">予約'+i+'</div>';h+='<div class="confirm-item" style="font-size:16px;font-weight:700">'+dd+'</div><div class="confirm-item">'+esc(document.getElementById('sk-venue'+i).value)+'</div><div class="confirm-item">'+esc(document.getElementById('sk-time'+i).value)+'〜 / '+esc(document.getElementById('sk-level'+i).value)+'</div>';var rl=skGetRentalLabels(i);if(rl.length)h+='<div class="confirm-item" style="color:var(--orange);font-size:12px">レンタル: '+rl.join(', ')+'</div>';h+='</div>'}h+='<div class="confirm-section" style="text-align:center;font-size:24px;font-weight:900;color:#e17055">'+document.getElementById('sk-grand-total').textContent+'</div>';document.getElementById('sokketsu-confirm-body').innerHTML=h;document.getElementById('sokketsu-confirm-overlay').classList.add('show')}
+function showSokketsuConfirm(){var sn=document.getElementById('sk-staff-name').value.trim();if(!sn){alert('入力者名を入力');return}localStorage.setItem(LS_SK_STAFF,sn);for(var i=1;i<=skSlotCount;i++){if(!document.getElementById('sk-date'+i).value||!document.getElementById('sk-venue'+i).value.trim()||!document.getElementById('sk-time'+i).value.trim()||!document.getElementById('sk-level'+i).value.trim()||!document.getElementById('sk-price'+i).value){alert('予約'+i+'が未入力');return}}var b=selectedVenue.blocks[selectedBlockIndex];var t=b.teams[selectedTeamIndex];document.getElementById('sk-confirm-rep').textContent=t.rep||'-';document.getElementById('sk-confirm-email').textContent=t.email||'(なし)';var wd=['日','月','火','水','木','金','土'];var h='';for(var i=1;i<=skSlotCount;i++){var dv=document.getElementById('sk-date'+i).value;var dd=dv;try{var dt=new Date(dv);dd=(dt.getMonth()+1)+'/'+dt.getDate()+'('+wd[dt.getDay()]+')'}catch(e){}h+='<div class="confirm-section"><div class="confirm-item" style="font-size:15px;font-weight:600">'+dd+'</div><div class="confirm-item">'+esc(document.getElementById('sk-venue'+i).value)+'</div><div class="confirm-item">'+esc(document.getElementById('sk-time'+i).value)+' / '+esc(document.getElementById('sk-level'+i).value)+'</div></div>'}h+='<div style="text-align:center;font-size:22px;font-weight:700;padding:12px 0">'+document.getElementById('sk-grand-total').textContent+'</div>';document.getElementById('sokketsu-confirm-body').innerHTML=h;document.getElementById('sokketsu-confirm-overlay').classList.add('show')}
 function closeSokketsuConfirm(){document.getElementById('sokketsu-confirm-overlay').classList.remove('show')}
 
-async function doSubmitSokketsu(){if(isSending)return;isSending=true;var btn=document.getElementById('sokketsu-send-btn');btn.disabled=true;closeSokketsuConfirm();showLoading('送信中...');var b=selectedVenue.blocks[selectedBlockIndex];var t=b.teams[selectedTeamIndex];var cl={'0':'なし','1000':'1,000円引き','2000':'2,000円引き','3000':'3,000円引き','4000':'4,000円引き','5000':'5,000円引き','8000':'8,000円引き'};var bks=[],grand=0,rg=0;for(var i=1;i<=skSlotCount;i++){var p=parseInt(document.getElementById('sk-price'+i).value)||0;var cv=document.getElementById('sk-coupon'+i).value;var d=parseInt(cv)||0;var sub=p-d;grand+=sub;var rental=skGetRentalData(i);rg+=rental.rentalTotal;bks.push({date:document.getElementById('sk-date'+i).value,venue:document.getElementById('sk-venue'+i).value,time:document.getElementById('sk-time'+i).value,level:document.getElementById('sk-level'+i).value,price:p,couponValue:cv,couponLabel:cl[cv]||'なし',discount:d,subtotal:sub,rental:rental})}var fd={staffName:document.getElementById('sk-staff-name').value,slotCount:skSlotCount,team:t.teamName,rep:t.rep||'',phone:t.phone||'',email:t.email||'',realEmail:t.realEmail||t.email||'',tournamentId:b.tournamentId||'',tournamentName:b.tournamentName||'',venue:selectedVenue.sheetName,bookings:bks,grandTotal:grand+rg,rentalGrandTotal:rg};try{var r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(fd)});var res=await r.json();hideLoading();isSending=false;document.getElementById('done-title').textContent='即決予約完了';var msgs=[];if(res.cw==='OK')msgs.push('CWタスク作成済');if(res.email==='OK')msgs.push('メール送信済');else if(res.email)msgs.push('メール: '+res.email);document.getElementById('done-subtitle').textContent=msgs.join(' / ')||'';var ee=document.getElementById('done-error');if(res.error){ee.textContent=res.error;ee.classList.remove('hidden')}else ee.classList.add('hidden');showScreen('screen-done')}catch(e){hideLoading();isSending=false;btn.disabled=false;alert('送信失敗: '+e.message)}}
+async function doSubmitSokketsu(){if(isSending)return;isSending=true;var btn=document.getElementById('sokketsu-send-btn');btn.disabled=true;closeSokketsuConfirm();showLoading('送信中');var b=selectedVenue.blocks[selectedBlockIndex];var t=b.teams[selectedTeamIndex];var cl={'0':'なし','1000':'1,000円引き','2000':'2,000円引き','3000':'3,000円引き','4000':'4,000円引き','5000':'5,000円引き','8000':'8,000円引き'};var bks=[],grand=0,rg=0;for(var i=1;i<=skSlotCount;i++){var p=parseInt(document.getElementById('sk-price'+i).value)||0;var cv=document.getElementById('sk-coupon'+i).value;var d=parseInt(cv)||0;var sub=p-d;grand+=sub;var rental=skGetRentalData(i);rg+=rental.rentalTotal;bks.push({date:document.getElementById('sk-date'+i).value,venue:document.getElementById('sk-venue'+i).value,time:document.getElementById('sk-time'+i).value,level:document.getElementById('sk-level'+i).value,price:p,couponValue:cv,couponLabel:cl[cv]||'なし',discount:d,subtotal:sub,rental:rental})}var fd={staffName:document.getElementById('sk-staff-name').value,slotCount:skSlotCount,team:t.teamName,rep:t.rep||'',phone:t.phone||'',email:t.email||'',realEmail:t.realEmail||t.email||'',tournamentId:b.tournamentId||'',tournamentName:b.tournamentName||'',venue:selectedVenue.sheetName,bookings:bks,grandTotal:grand+rg,rentalGrandTotal:rg};try{var r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(fd)});var res=await r.json();hideLoading();isSending=false;document.getElementById('done-title').textContent='予約完了';var msgs=[];if(res.cw==='OK')msgs.push('CWタスク作成済');if(res.email==='OK')msgs.push('メール送信済');document.getElementById('done-subtitle').textContent=msgs.join(' / ');var ee=document.getElementById('done-error');if(res.error){ee.textContent=res.error;ee.classList.remove('hidden')}else ee.classList.add('hidden');showScreen('screen-done')}catch(e){hideLoading();isSending=false;btn.disabled=false;alert(e.message)}}
 
 function goReport(){renderReportForm();var saved=localStorage.getItem(LS_STAFF);if(saved)document.getElementById('report-staff-name').value=saved;showScreen('screen-report')}
 
 function renderReportForm(){renderReportBlocks();renderStaff();var sa=selectedVenue.staffArea||{};document.getElementById('accident-report').value=sa.accidentReport||'';document.getElementById('other-report').value=sa.otherReport||'';document.getElementById('nw-start').value=sa.defaultStart||'09:00';document.getElementById('nw-end').value=sa.defaultEnd||'18:00';document.getElementById('nw-break').value=sa.defaultBreak||60;renderCheckItems()}
 
-function renderReportBlocks(){var area=document.getElementById('report-blocks-area');var blocks=selectedVenue.blocks||[];if(!blocks.length){area.innerHTML='<p class="empty-state">大会データがありません</p>';return}area.innerHTML=blocks.map(function(b,bi){var teams=b.teams||[];var tp=[];if(b.startTime)tp.push(b.startTime);tp.push(b.tournamentName||'大会 '+(bi+1));return'<div style="margin-bottom:16px"><div style="font-size:14px;font-weight:700;color:var(--accent2);margin-bottom:8px">'+esc(tp.join(' '))+' ('+teams.length+'チーム)</div><div class="cancel-toggle-row"><label class="cancel-toggle"><input type="checkbox" id="rpt-cancel-'+bi+'" onchange="onReportCancelToggle('+bi+')"><span>大会中止</span></label></div><div id="rpt-teams-'+bi+'">'+teams.map(function(t,ti){var so=[['','---'],['なし','なし'],['即決1','即決1'],['即決2','即決2'],['即決3','即決3'],['即決4','即決4'],['即決5','即決5']];var ro=[['','---'],['1位','1位'],['2位','2位'],['3位','3位'],['4位','4位'],['5位','5位'],['6位以下','6位以下']];var ss='width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;background:var(--surface3);color:var(--text)';var sh='<select id="rpt-sales-'+bi+'-'+ti+'" style="'+ss+'">'+so.map(function(o){return'<option value="'+esc(o[0])+'"'+(t.salesActivity===o[0]?' selected':'')+'>'+esc(o[1])+'</option>'}).join('')+'</select>';var rh='<select id="rpt-rank-'+bi+'-'+ti+'" style="'+ss+'">'+ro.map(function(o){return'<option value="'+esc(o[0])+'"'+(t.rank===o[0]?' selected':'')+'>'+esc(o[1])+'</option>'}).join('')+'</select>';return'<div style="border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px;background:var(--surface2)"><div style="font-size:14px;font-weight:700;margin-bottom:8px">'+esc(t.teamName)+' <span style="font-size:11px;color:var(--text3)">#'+esc(t.applicationNo)+'</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px"><div><div style="font-size:10px;color:var(--text3);margin-bottom:3px">営業活動</div>'+sh+'</div><div><div style="font-size:10px;color:var(--text3);margin-bottom:3px">順位</div>'+rh+'</div></div><div><div style="font-size:10px;color:var(--text3);margin-bottom:3px">備考</div><input type="text" id="rpt-remarks-'+bi+'-'+ti+'" value="'+esc(t.remarks||'')+'" placeholder="備考" style="'+ss+'"></div></div>'}).join('')+'</div></div>'}).join('')}
+function renderReportBlocks(){var area=document.getElementById('report-blocks-area');var blocks=selectedVenue.blocks||[];if(!blocks.length){area.innerHTML='<p class="empty-state">大会なし</p>';return}area.innerHTML=blocks.map(function(b,bi){var teams=b.teams||[];var tp=[];if(b.startTime)tp.push(b.startTime);tp.push(b.tournamentName||'大会');return'<div style="margin-bottom:20px"><div style="font-size:15px;font-weight:600;margin-bottom:8px">'+esc(tp.join(' '))+'</div><div class="cancel-toggle-row"><label class="cancel-toggle"><input type="checkbox" id="rpt-cancel-'+bi+'" onchange="onReportCancelToggle('+bi+')"><span>中止</span></label></div><div id="rpt-teams-'+bi+'">'+teams.map(function(t,ti){var ss='width:100%;padding:8px;border:1px solid #d2d2d7;border-radius:6px;font-size:15px;font-family:inherit;background:#fff;color:#1d1d1f;-webkit-appearance:none';var so=[['','---'],['なし','なし'],['即決1','即決1'],['即決2','即決2'],['即決3','即決3'],['即決4','即決4'],['即決5','即決5']];var ro=[['','---'],['1位','1位'],['2位','2位'],['3位','3位'],['4位','4位'],['5位','5位'],['6位以下','6位以下']];var sh='<select id="rpt-sales-'+bi+'-'+ti+'" style="'+ss+'">'+so.map(function(o){return'<option value="'+esc(o[0])+'"'+(t.salesActivity===o[0]?' selected':'')+'>'+esc(o[1])+'</option>'}).join('')+'</select>';var rh='<select id="rpt-rank-'+bi+'-'+ti+'" style="'+ss+'">'+ro.map(function(o){return'<option value="'+esc(o[0])+'"'+(t.rank===o[0]?' selected':'')+'>'+esc(o[1])+'</option>'}).join('')+'</select>';return'<div style="padding:12px 0;border-bottom:.5px solid rgba(0,0,0,.06)"><div style="font-size:15px;font-weight:600;margin-bottom:8px">'+esc(t.teamName)+'</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px"><div><div style="font-size:11px;color:#86868b;margin-bottom:2px">営業</div>'+sh+'</div><div><div style="font-size:11px;color:#86868b;margin-bottom:2px">順位</div>'+rh+'</div></div><div><div style="font-size:11px;color:#86868b;margin-bottom:2px">備考</div><input type="text" id="rpt-remarks-'+bi+'-'+ti+'" value="'+esc(t.remarks||'')+'" placeholder="備考" style="'+ss+'"></div></div>'}).join('')+'</div></div>'}).join('')}
 
-function onReportCancelToggle(bi){var cb=document.getElementById('rpt-cancel-'+bi);document.getElementById('rpt-teams-'+bi).classList.toggle('teams-disabled',cb.checked)}
+function onReportCancelToggle(bi){document.getElementById('rpt-teams-'+bi).classList.toggle('teams-disabled',document.getElementById('rpt-cancel-'+bi).checked)}
 
-function renderStaff(){var sa=selectedVenue.staffArea||{};var ml=(venueData.memberList&&venueData.memberList.length)?venueData.memberList:(selectedVenue.memberList||[]);var area=document.getElementById('staff-area');var slots=sa.staff||[];var ms=13;var display=[];for(var i=0;i<ms;i++)display.push(slots[i]||{row:0,name:'',checkIn:'',checkOut:'',breakMin:0});var oh='<option value="">--</option>';ml.forEach(function(n){oh+='<option value="'+esc(n)+'">'+esc(n)+'</option>'});area.innerHTML=display.map(function(s,i){var hn=s.name&&s.name.trim();return'<div class="staff-entry '+(hn?'has-name':'')+'" id="se-'+i+'"><div class="staff-row-top"><div class="staff-num">'+(i+1)+'</div><select id="sn-'+i+'" onchange="onStaffNameChange('+i+')">'+oh+'</select><label class="nw-toggle"><input type="checkbox" id="snw-'+i+'" onchange="onNormalWorkToggle('+i+')"><span class="switch"></span><span>通常</span></label></div><div class="staff-row-bottom '+(hn?'':'collapsed')+'" id="sr-'+i+'"><div><div class="staff-field-label">出勤</div><input type="time" id="sci-'+i+'" value="'+esc(s.checkIn||'')+'"></div><div><div class="staff-field-label">退勤</div><input type="time" id="sco-'+i+'" value="'+esc(s.checkOut||'')+'"></div><div><div class="staff-field-label">休憩</div><input type="number" id="sb-'+i+'" value="'+(s.breakMin||'')+'" placeholder="分" min="0" step="15"></div></div></div>'}).join('');display.forEach(function(s,i){if(s.name){var sel=document.getElementById('sn-'+i);sel.value=s.name;if(sel.value!==s.name){var opt=document.createElement('option');opt.value=s.name;opt.textContent=s.name;sel.appendChild(opt);sel.value=s.name}}})}
+function renderStaff(){var sa=selectedVenue.staffArea||{};var ml=(venueData.memberList&&venueData.memberList.length)?venueData.memberList:(selectedVenue.memberList||[]);var area=document.getElementById('staff-area');var slots=sa.staff||[];var display=[];for(var i=0;i<13;i++)display.push(slots[i]||{row:0,name:'',checkIn:'',checkOut:'',breakMin:0});var oh='<option value="">--</option>';ml.forEach(function(n){oh+='<option value="'+esc(n)+'">'+esc(n)+'</option>'});area.innerHTML=display.map(function(s,i){var hn=s.name&&s.name.trim();return'<div class="staff-row" id="se-'+i+'"><div class="staff-num">'+(i+1)+'</div><select id="sn-'+i+'" onchange="onStaffNameChange('+i+')">'+oh+'</select><label class="nw-toggle"><input type="checkbox" id="snw-'+i+'" onchange="onNormalWorkToggle('+i+')"><span class="sw"></span></label></div><div class="staff-times '+(hn?'':'collapsed')+'" id="sr-'+i+'"><div><div class="st-label">出勤</div><input type="time" id="sci-'+i+'" value="'+esc(s.checkIn||'')+'"></div><div><div class="st-label">退勤</div><input type="time" id="sco-'+i+'" value="'+esc(s.checkOut||'')+'"></div><div><div class="st-label">休憩</div><input type="number" id="sb-'+i+'" value="'+(s.breakMin||'')+'" min="0" step="15"></div></div>'}).join('');display.forEach(function(s,i){if(s.name){var sel=document.getElementById('sn-'+i);sel.value=s.name;if(sel.value!==s.name){var opt=document.createElement('option');opt.value=s.name;opt.textContent=s.name;sel.appendChild(opt);sel.value=s.name}}})}
 
-function onStaffNameChange(idx){var sel=document.getElementById('sn-'+idx);var hn=sel.value.trim()!=='';document.getElementById('se-'+idx).classList.toggle('has-name',hn);document.getElementById('sr-'+idx).classList.toggle('collapsed',!hn)}
-function onNormalWorkToggle(idx){var cb=document.getElementById('snw-'+idx);var ci=document.getElementById('sci-'+idx);var co=document.getElementById('sco-'+idx);var sb=document.getElementById('sb-'+idx);if(cb.checked){ci.value=document.getElementById('nw-start').value;co.value=document.getElementById('nw-end').value;sb.value=document.getElementById('nw-break').value;ci.disabled=co.disabled=sb.disabled=true}else{ci.disabled=co.disabled=sb.disabled=false}}
-function applyAllNormal(){for(var i=0;i<13;i++){var sel=document.getElementById('sn-'+i);if(sel&&sel.value.trim()){document.getElementById('snw-'+i).checked=true;onNormalWorkToggle(i);document.getElementById('sr-'+i).classList.remove('collapsed');document.getElementById('se-'+i).classList.add('has-name')}}}
-function renderCheckItems(){var sa=selectedVenue.staffArea||{};var items=sa.checkItems||[];var area=document.getElementById('check-items-area');if(!items.length){area.innerHTML='<p class="empty-state">チェック項目がありません</p>';return}area.innerHTML=items.map(function(item,i){return'<div class="check-item"><input type="checkbox" id="chk-'+i+'" '+(item.checked?'checked':'')+'><label for="chk-'+i+'">'+esc(item.text)+'</label></div>'}).join('')}
+function onStaffNameChange(idx){var hn=document.getElementById('sn-'+idx).value.trim()!=='';document.getElementById('sr-'+idx).classList.toggle('collapsed',!hn)}
+function onNormalWorkToggle(idx){var cb=document.getElementById('snw-'+idx);var ci=document.getElementById('sci-'+idx),co=document.getElementById('sco-'+idx),sb=document.getElementById('sb-'+idx);if(cb.checked){ci.value=document.getElementById('nw-start').value;co.value=document.getElementById('nw-end').value;sb.value=document.getElementById('nw-break').value;ci.disabled=co.disabled=sb.disabled=true}else{ci.disabled=co.disabled=sb.disabled=false}}
+function applyAllNormal(){for(var i=0;i<13;i++){var sel=document.getElementById('sn-'+i);if(sel&&sel.value.trim()){document.getElementById('snw-'+i).checked=true;onNormalWorkToggle(i);document.getElementById('sr-'+i).classList.remove('collapsed')}}}
+function renderCheckItems(){var sa=selectedVenue.staffArea||{};var items=sa.checkItems||[];var area=document.getElementById('check-items-area');if(!items.length){area.innerHTML='<p class="empty-state">チェック項目なし</p>';return}area.innerHTML=items.map(function(item,i){return'<div class="check-item"><input type="checkbox" id="chk-'+i+'" '+(item.checked?'checked':'')+'><label for="chk-'+i+'">'+esc(item.text)+'</label></div>'}).join('')}
 
-function showReportConfirm(){if(isSending)return;var sn=document.getElementById('report-staff-name').value.trim();if(!sn){alert('報告者名を入力してください');document.getElementById('report-staff-name').focus();return}localStorage.setItem(LS_STAFF,sn);var errors=[];var blocks=selectedVenue.blocks||[];blocks.forEach(function(b,bi){if(document.getElementById('rpt-cancel-'+bi).checked)return;(b.teams||[]).forEach(function(t,ti){if(!document.getElementById('rpt-sales-'+bi+'-'+ti).value)errors.push(esc(t.teamName)+' の営業活動が未選択')})});var sa=selectedVenue.staffArea||{};var ci=sa.checkItems||[];var uc=0;ci.forEach(function(item,i){if(!document.getElementById('chk-'+i).checked)uc++});if(uc)errors.push('チェックが '+uc+' 件未チェック');if(errors.length){alert(errors.join('\n'));return}var h='<div class="confirm-section"><div class="confirm-section-title">報告者</div><div class="confirm-item">'+esc(sn)+' / '+esc(selectedVenue.sheetName)+'</div></div>';blocks.forEach(function(b,bi){var tl=(b.teams||[]).map(function(t,ti){var s=document.getElementById('rpt-sales-'+bi+'-'+ti).value;var r=document.getElementById('rpt-rank-'+bi+'-'+ti).value;var rm=document.getElementById('rpt-remarks-'+bi+'-'+ti).value;return'<div class="confirm-item">'+esc(t.teamName)+' / '+(s?'営業:'+esc(s):'')+' '+(r?esc(r):'')+' '+(rm?esc(rm):'')+'</div>'}).join('');h+='<div class="confirm-section"><div class="confirm-section-title">'+esc(b.tournamentName||'大会'+(bi+1))+'</div>'+tl+'</div>'});var sl='';for(var i=0;i<13;i++){var n=document.getElementById('sn-'+i).value.trim();if(!n)continue;sl+='<div class="confirm-item">'+esc(n)+' '+document.getElementById('sci-'+i).value+'-'+document.getElementById('sco-'+i).value+' 休憩'+(document.getElementById('sb-'+i).value||0)+'分</div>'}if(sl)h+='<div class="confirm-section"><div class="confirm-section-title">スタッフ</div>'+sl+'</div>';document.getElementById('report-confirm-body').innerHTML=h;document.getElementById('report-confirm-overlay').classList.add('show')}
+function showReportConfirm(){if(isSending)return;var sn=document.getElementById('report-staff-name').value.trim();if(!sn){alert('報告者名を入力');document.getElementById('report-staff-name').focus();return}localStorage.setItem(LS_STAFF,sn);var errors=[];var blocks=selectedVenue.blocks||[];blocks.forEach(function(b,bi){if(document.getElementById('rpt-cancel-'+bi).checked)return;(b.teams||[]).forEach(function(t,ti){if(!document.getElementById('rpt-sales-'+bi+'-'+ti).value)errors.push(t.teamName+' 営業未選択')})});var sa=selectedVenue.staffArea||{};var ci=sa.checkItems||[];var uc=0;ci.forEach(function(item,i){if(!document.getElementById('chk-'+i).checked)uc++});if(uc)errors.push(uc+'件未チェック');if(errors.length){alert(errors.join('\n'));return}var h='<div class="confirm-section"><div class="confirm-section-title">報告者</div><div class="confirm-item">'+esc(sn)+'</div></div>';blocks.forEach(function(b,bi){var tl=(b.teams||[]).map(function(t,ti){var s=document.getElementById('rpt-sales-'+bi+'-'+ti).value;var r=document.getElementById('rpt-rank-'+bi+'-'+ti).value;return'<div class="confirm-item">'+esc(t.teamName)+' '+esc(s)+' '+esc(r)+'</div>'}).join('');h+='<div class="confirm-section"><div class="confirm-section-title">'+esc(b.tournamentName||'')+'</div>'+tl+'</div>'});document.getElementById('report-confirm-body').innerHTML=h;document.getElementById('report-confirm-overlay').classList.add('show')}
 function closeReportConfirm(){document.getElementById('report-confirm-overlay').classList.remove('show')}
 
-async function doSubmitReport(){if(isSending)return;isSending=true;document.getElementById('report-send-btn').disabled=true;closeReportConfirm();showLoading('送信中...');var blocks=selectedVenue.blocks||[];var teams=[];blocks.forEach(function(b,bi){(b.teams||[]).forEach(function(t,ti){teams.push({teamRow:t.teamRow,salesActivity:document.getElementById('rpt-sales-'+bi+'-'+ti).value,rank:document.getElementById('rpt-rank-'+bi+'-'+ti).value,remarks:document.getElementById('rpt-remarks-'+bi+'-'+ti).value})})});var staffList=[];var sa=selectedVenue.staffArea||{};var slots=sa.staff||[];for(var i=0;i<13;i++){var name=document.getElementById('sn-'+i).value.trim();var row=(slots[i]&&slots[i].row)?slots[i].row:(390+i);staffList.push({row:row,name:name,checkIn:document.getElementById('sci-'+i).value,checkOut:document.getElementById('sco-'+i).value,breakMin:parseInt(document.getElementById('sb-'+i).value)||0,normalWork:document.getElementById('snw-'+i).checked})}var checkItems=(sa.checkItems||[]).map(function(item,i){return{row:item.row,checked:document.getElementById('chk-'+i).checked}});var payload={action:'submitReport',staffName:document.getElementById('report-staff-name').value.trim(),spreadsheetId:selectedVenue.spreadsheetId,sheetName:selectedVenue.sheetName,teams:teams,staffList:staffList,accidentReport:document.getElementById('accident-report').value.trim(),otherReport:document.getElementById('other-report').value.trim(),checkItems:checkItems,markComplete:true};try{var r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});var res=await r.json();hideLoading();isSending=false;document.getElementById('done-title').textContent='報告完了';document.getElementById('done-subtitle').textContent=selectedVenue.sheetName+' の完了報告を送信しました';var ee=document.getElementById('done-error');if(res.error){ee.textContent=res.error;ee.classList.remove('hidden')}else ee.classList.add('hidden');showScreen('screen-done')}catch(e){hideLoading();isSending=false;document.getElementById('report-send-btn').disabled=false;alert('送信失敗: '+e.message)}}
+async function doSubmitReport(){if(isSending)return;isSending=true;document.getElementById('report-send-btn').disabled=true;closeReportConfirm();showLoading('送信中');var blocks=selectedVenue.blocks||[];var teams=[];blocks.forEach(function(b,bi){(b.teams||[]).forEach(function(t,ti){teams.push({teamRow:t.teamRow,salesActivity:document.getElementById('rpt-sales-'+bi+'-'+ti).value,rank:document.getElementById('rpt-rank-'+bi+'-'+ti).value,remarks:document.getElementById('rpt-remarks-'+bi+'-'+ti).value})})});var staffList=[];var sa=selectedVenue.staffArea||{};var slots=sa.staff||[];for(var i=0;i<13;i++){var name=document.getElementById('sn-'+i).value.trim();var row=(slots[i]&&slots[i].row)?slots[i].row:(390+i);staffList.push({row:row,name:name,checkIn:document.getElementById('sci-'+i).value,checkOut:document.getElementById('sco-'+i).value,breakMin:parseInt(document.getElementById('sb-'+i).value)||0,normalWork:document.getElementById('snw-'+i).checked})}var checkItems=(sa.checkItems||[]).map(function(item,i){return{row:item.row,checked:document.getElementById('chk-'+i).checked}});var payload={action:'submitReport',staffName:document.getElementById('report-staff-name').value.trim(),spreadsheetId:selectedVenue.spreadsheetId,sheetName:selectedVenue.sheetName,teams:teams,staffList:staffList,accidentReport:document.getElementById('accident-report').value.trim(),otherReport:document.getElementById('other-report').value.trim(),checkItems:checkItems,markComplete:true};try{var r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});var res=await r.json();hideLoading();isSending=false;document.getElementById('done-title').textContent='報告完了';document.getElementById('done-subtitle').textContent=selectedVenue.sheetName;var ee=document.getElementById('done-error');if(res.error){ee.textContent=res.error;ee.classList.remove('hidden')}else ee.classList.add('hidden');showScreen('screen-done')}catch(e){hideLoading();isSending=false;document.getElementById('report-send-btn').disabled=false;alert(e.message)}}
 
 function showLoading(m){document.getElementById('loading-text').textContent=m||'';var el=document.getElementById('loading-overlay');el.classList.remove('hidden');el.style.opacity='1'}
 function hideLoading(){document.getElementById('loading-overlay').classList.add('hidden')}

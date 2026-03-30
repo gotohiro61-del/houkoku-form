@@ -430,7 +430,14 @@ function renderVenueList(){var el=document.getElementById('venue-list');var venu
 
 function loadUnreportedVenues(){var el=document.getElementById('venue-list');el.innerHTML='<p class="empty-state">取得中...</p>';fetch(API_URL+'?action=getUnreported').then(function(r){return r.json()}).then(function(d){if(d.error){el.innerHTML='<p class="empty-state">'+esc(d.error)+'</p>';return}var list=d.unreported||[];if(!list.length){el.innerHTML='<p class="empty-state">未報告なし</p>';return}el.innerHTML=list.map(function(v){return'<div class="card" onclick="loadAndSelectVenue(\''+esc(v.spreadsheetId)+'\',\''+esc(v.sheetName)+'\')"><div class="card-body"><div class="card-name" style="color:#ff3b30">'+esc(v.sheetName.replace(/^\d+日\s*/,''))+'</div><div class="card-meta"><span>'+esc(v.dateStr)+'</span><span>'+v.blockCount+'大会</span><span class="meta-badge" style="color:#fff;background:#ff3b30">未報告</span></div></div><span class="card-arrow">&#x203A;</span></div>'}).join('')}).catch(function(e){el.innerHTML='<p class="empty-state">エラー</p>'})}
 
-function loadAndSelectVenue(ssId,sn){var venues=(venueData&&venueData.venues)||[];for(var i=0;i<venues.length;i++){if(venues[i].spreadsheetId===ssId&&venues[i].sheetName===sn){selectVenue(i);return}}showLoading('読み込み中');fetch(API_URL+'?action=getVenueBySheet&ssId='+encodeURIComponent(ssId)+'&sheetName='+encodeURIComponent(sn)).then(function(r){return r.json()}).then(function(d){hideLoading();if(d.error){showError(d.error);return}if(!venueData)venueData={venues:[]};if(!venueData.venues)venueData.venues=[];venueData.venues.push(d.venue);if(d.memberList)venueData.memberList=d.memberList;selectVenue(venueData.venues.length-1)}).catch(function(e){hideLoading();showError(e.message)})}
+function loadAndSelectVenue(ssId,sn){var venues=(venueData&&venueData.venues)||[];
+// 既にblocks付きで読み込み済みならそのまま遷移
+for(var i=0;i<venues.length;i++){if(venues[i].spreadsheetId===ssId&&venues[i].sheetName===sn&&venues[i].blocks){selectedVenueIndex=i;selectedVenue=venues[i];renderVenueDashboard();loadHistory();showScreen('screen-venue-dashboard');return}}
+showLoading('読み込み中');fetch(API_URL+'?action=getVenueBySheet&ssId='+encodeURIComponent(ssId)+'&sheetName='+encodeURIComponent(sn)).then(function(r){return r.json()}).then(function(d){hideLoading();if(d.error){showError(d.error);return}if(!venueData)venueData={venues:[]};if(!venueData.venues)venueData.venues=[];if(d.memberList)venueData.memberList=d.memberList;
+// 既存venueを探して置き換え
+var found=-1;for(var i=0;i<venueData.venues.length;i++){if(venueData.venues[i].spreadsheetId===ssId&&venueData.venues[i].sheetName===sn){found=i;break}}
+if(found>=0){venueData.venues[found]=d.venue;selectedVenueIndex=found}else{venueData.venues.push(d.venue);selectedVenueIndex=venueData.venues.length-1}
+selectedVenue=d.venue;renderVenueDashboard();loadHistory();showScreen('screen-venue-dashboard')}).catch(function(e){hideLoading();showError(e.message)})}
 
 function selectVenue(idx){var v=venueData.venues[idx];selectedVenueIndex=idx;if(v.blocks){selectedVenue=v;renderVenueDashboard();loadHistory();showScreen('screen-venue-dashboard')}else{loadAndSelectVenue(v.spreadsheetId,v.sheetName)}}
 

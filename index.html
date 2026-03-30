@@ -128,7 +128,7 @@ body{
 .btn-danger:active{opacity:.75}
 
 /* ===== Report ===== */
-.report-btn{width:100%;padding:16px;background:#86868b;color:#fff;border:none;border-radius:12px;font-size:17px;font-weight:600;cursor:pointer;margin-top:12px;letter-spacing:-.01em}
+.report-btn{width:100%;padding:16px;background:#34c759;color:#fff;border:none;border-radius:12px;font-size:17px;font-weight:600;cursor:pointer;margin-top:12px;letter-spacing:-.01em}
 .report-btn:active{opacity:.75}
 .report-btn:disabled{opacity:.3}
 
@@ -442,7 +442,7 @@ var found=-1;for(var i=0;i<venueData.venues.length;i++){if(venueData.venues[i].s
 if(found>=0){venueData.venues[found]=d.venue;selectedVenueIndex=found}else{venueData.venues.push(d.venue);selectedVenueIndex=venueData.venues.length-1}
 selectedVenue=d.venue;renderVenueDashboard();loadHistory();showScreen('screen-venue-dashboard')}).catch(function(e){hideLoading();showError(e.message)})}
 
-function selectVenue(idx){var v=venueData.venues[idx];selectedVenueIndex=idx;if(v.blocks){selectedVenue=v;renderVenueDashboard();loadHistory();showScreen('screen-venue-dashboard')}else{loadAndSelectVenue(v.spreadsheetId,v.sheetName)}}
+function selectVenue(idx){selectedVenueIndex=idx;selectedVenue=venueData.venues[idx];renderVenueDashboard();loadHistory();showScreen('screen-venue-dashboard')}
 
 function renderVenueDashboard(){var v=selectedVenue;document.getElementById('venue-title').textContent=v.sheetName;var blocks=v.blocks||[];var el=document.getElementById('tournament-list');if(!blocks.length){el.innerHTML='<p class="empty-state">大会なし</p>';return}el.innerHTML=blocks.map(function(b,bi){var tc=(b.teams||[]).length;var mt=b.maxTeams||'';var prizes=b.prizes||[];var pl=['優勝','副賞','GT'];var prizeHtml=prizes.length?'<div style="display:flex;flex-direction:column;gap:2px;margin-top:4px">'+prizes.map(function(p,pi){return'<span style="font-size:11px;color:#af8700">'+pl[pi]+': '+esc(p)+'</span>'}).join('')+'</div>':'';return'<div class="card" onclick="selectTournament('+bi+')"><div class="card-body"><div class="card-name">'+esc(b.tournamentName||'大会')+'</div><div class="card-meta">'+(b.startTime?'<span>('+esc(b.startTime)+')</span>':'')+'<span>'+tc+'チーム'+(mt?'('+esc(mt)+')':'')+'</span>'+(b.level?'<span>'+esc(b.level)+'</span>':'')+'</div>'+prizeHtml+'</div><span class="card-arrow">&#x203A;</span></div>'}).join('')}
 

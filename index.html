@@ -326,6 +326,10 @@ body{
     <div class="section">
       <div class="section-inner">
         <div class="section-title" id="history-screen-title">即決履歴</div>
+        <div style="display:flex;gap:0;background:#f5f5f7;border-radius:8px;padding:2px;margin-bottom:12px">
+          <button id="hist-mode-venue" onclick="switchHistMode('venue')" style="flex:1;padding:8px;border:none;border-radius:7px;background:#fff;color:#1d1d1f;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.1)">この会場</button>
+          <button id="hist-mode-all" onclick="switchHistMode('all')" style="flex:1;padding:8px;border:none;border-radius:7px;background:transparent;color:#86868b;font-size:13px;font-weight:600;cursor:pointer">全会場3日間</button>
+        </div>
       </div>
       <div id="history-list"><p class="empty-state">読み込み中</p></div>
     </div>
@@ -456,7 +460,9 @@ function renderVenueDashboard(){var v=selectedVenue;document.getElementById('ven
 
 function loadHistory(){var days=0;if(selectedVenue&&selectedVenue.dayCategory==='yesterday')days=1;else if(selectedVenue&&(selectedVenue.dayCategory==='past'))days=7;fetch(API_URL+'?action=getHistory&days='+days).then(function(r){return r.json()}).then(function(d){var tids={};if(selectedVenue&&selectedVenue.blocks){selectedVenue.blocks.forEach(function(b){if(b.tournamentId)tids[b.tournamentId]=true})}var all=d.items||[];if(Object.keys(tids).length>0){historyItems=all.filter(function(h){return tids[h.tournamentId]})}else{historyItems=all}var ce=document.getElementById('history-count-dash');if(ce)ce.textContent=historyItems.length?'('+historyItems.length+'件)':''}).catch(function(){})}
 
-function goHistoryScreen(){document.getElementById('history-screen-title').textContent='即決履歴 - '+((selectedVenue&&selectedVenue.sheetName)||'');var el=document.getElementById('history-list');if(historyItems.length===0){el.innerHTML='<p class="empty-state">この会場の即決履歴はありません</p>'}else{renderHistory()}showScreen('screen-history')}
+function goHistoryScreen(){document.getElementById('history-screen-title').textContent='即決履歴';switchHistMode('venue');showScreen('screen-history')}
+
+function switchHistMode(mode){var bv=document.getElementById('hist-mode-venue');var ba=document.getElementById('hist-mode-all');bv.style.background=mode==='venue'?'#fff':'transparent';bv.style.color=mode==='venue'?'#1d1d1f':'#86868b';bv.style.boxShadow=mode==='venue'?'0 1px 3px rgba(0,0,0,.1)':'none';ba.style.background=mode==='all'?'#fff':'transparent';ba.style.color=mode==='all'?'#1d1d1f':'#86868b';ba.style.boxShadow=mode==='all'?'0 1px 3px rgba(0,0,0,.1)':'none';var el=document.getElementById('history-list');el.innerHTML='<p class="empty-state">読み込み中...</p>';if(mode==='venue'){if(historyItems.length===0){el.innerHTML='<p class="empty-state">この会場の即決履歴はありません</p>'}else{renderHistory()}}else{fetch(API_URL+'?action=getHistory&days=3').then(function(r){return r.json()}).then(function(d){historyItems=d.items||[];renderHistory()}).catch(function(){el.innerHTML='<p class="empty-state">取得失敗</p>'})}}
 
 function renderHistory(){var el=document.getElementById('history-list');if(!historyItems.length){el.innerHTML='<p class="empty-state">なし</p>';return}el.innerHTML=historyItems.map(function(h,i){return'<div class="history-item"><div><div class="hi-time">'+esc(h.time)+'</div><div class="hi-team">'+esc(h.team)+'</div><div class="hi-detail">'+h.slotCount+'枠</div></div><div class="hi-status"><div class="dot '+(h.cwOk?'ok':'ng')+'"></div><div class="dot '+(h.emailOk?'ok':'ng')+'"></div>'+(!h.emailOk?'<button class="resend-btn" id="resend-'+i+'" onclick="resendEmail('+i+')">再送</button>':'')+'</div></div>'}).join('')}
 

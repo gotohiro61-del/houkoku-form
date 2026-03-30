@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>完了報告システム</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+    background: #f0f2f5;
+    color: #333;
+    min-height: 100vh;
+    -webkit-text-size-adjust: 100%;
+  }
+  .container {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 12px;
+    padding-bottom: 40px;
+  }
+
+  /* Loading overlay */
+  #loading-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: #fff;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.3s;
+  }
+  #loading-overlay.hidden { opacity: 0; pointer-events: none; }
+  .spinner {
+    width: 40px; height: 40px;
+    border: 4px solid #e0e0e0;
+    border-top-color: #2980b9;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { margin-top: 16px; font-size: 14px; color: #888; }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, #1a5276, #2980b9);
+    color: white;
+    padding: 18px 16px;
+    border-radius: 14px;
+    margin-bottom: 14px;
+    text-align: center;
+  }
+  .header h1 { font-size: 17px; font-weight: 700; }
+  .header .badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.25);
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    margin-top: 6px;
+  }
+
+  /* Steps indicator */
+  .steps { display: flex; justify-content: center; gap: 8px; margin-bottom: 16px; }
+  .step-dot { width: 10px; height: 10px; border-radius: 50%; background: #ddd; transition: all 0.3s; }
+  .step-dot.active { background: #2980b9; width: 28px; border-radius: 5px; }
+
+  /* Section */
+  .section {
+    background: white;
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .section-title {
+    font-size: 15px; font-weight: 700; color: #1a5276;
+    margin-bottom: 14px; display: flex; align-items: center; gap: 6px;
+    padding-bottom: 8px; border-bottom: 2px solid #e0edf5;
+  }
+
+  /* Form */
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 13px; font-weight: 700; color: #444; margin-bottom: 6px; }
+  .form-group label .req { color: #d32f2f; font-size: 11px; margin-left: 4px; }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0;
+    border-radius: 10px; font-size: 16px; background: #fafafa;
+    transition: border-color 0.2s, background 0.2s;
+    -webkit-appearance: none; font-family: inherit;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    outline: none; border-color: #2980b9; background: white;
+  }
+  .form-group textarea { resize: vertical; min-height: 120px; line-height: 1.6; }
+
+  /* Date nav */
+  .date-nav {
+    display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto;
+  }
+  .date-btn {
+    flex-shrink: 0; padding: 8px 14px; border: 2px solid #e0e0e0;
+    border-radius: 20px; background: #fafafa; font-size: 13px;
+    font-weight: 700; color: #666; cursor: pointer; transition: all 0.15s;
+  }
+  .date-btn.active { border-color: #2980b9; background: #e0edf5; color: #1a5276; }
+  .date-btn:first-child { border-color: #e74c3c; color: #c0392b; }
+  .date-btn:first-child.active { background: #fdecea; border-color: #c0392b; color: #c0392b; }
+
+  /* Venue card */
+  .venue-card {
+    background: white; border: 2px solid #e8eaed; border-radius: 14px;
+    padding: 16px; margin-bottom: 8px; cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .venue-card:active { background: #f0f4ff; }
+  .venue-card .venue-info { flex: 1; }
+  .venue-card .venue-name { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .venue-card .venue-meta { font-size: 13px; color: #666; }
+  .venue-card .venue-status { font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 12px; white-space: nowrap; }
+  .venue-card .venue-status.done { background: #e8f5e9; color: #2e7d32; }
+  .venue-card.venue-done { background: #f0f0f0; border-color: #ccc; }
+  .venue-card.venue-done .venue-name { color: #999; }
+
+  /* ===== Tab Bar ===== */
+  .tab-bar {
+    display: flex;
+    background: #e8eaed;
+    border-radius: 12px;
+    padding: 3px;
+    margin-bottom: 14px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 10px 0;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: #666;
+    border: none;
+    background: transparent;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tab-btn.active {
+    background: white;
+    color: #1a5276;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ===== Toggle Buttons (Sales) ===== */
+  .toggle-group {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .toggle-btn {
+    padding: 8px 14px;
+    border: 2px solid #e0e0e0;
+    border-radius: 20px;
+    background: #fafafa;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: #666;
+  }
+  .toggle-btn:active { transform: scale(0.95); }
+  .toggle-btn.selected {
+    border-color: #2980b9;
+    background: #e0edf5;
+    color: #1a5276;
+  }
+  .toggle-btn.selected-yes { border-color: #27ae60; background: #e8f5e9; color: #2e7d32; }
+  .toggle-btn.selected-no { border-color: #c0392b; background: #fdecea; color: #c0392b; }
+
+  /* ===== Pill Buttons (Rank) ===== */
+  .pill-group {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  .pill-btn {
+    padding: 6px 10px;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 16px;
+    background: #fafafa;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: #666;
+  }
+  .pill-btn:active { transform: scale(0.95); }
+  .pill-btn.selected {
+    border-color: #f39c12;
+    background: #fef9e7;
+    color: #d68910;
+  }
+
+  /* Accordion */
+  .accordion { border: 2px solid #e8eaed; border-radius: 14px; margin-bottom: 10px; overflow: hidden; }
+  .accordion-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 16px; background: #f0f4f8; cursor: pointer;
+    user-select: none; -webkit-user-select: none;
+  }
+  .accordion-header:active { background: #e4eaf0; }
+  .accordion-header .acc-title { font-size: 14px; font-weight: 700; color: #1a5276; }
+  .accordion-header .acc-sub { font-size: 12px; color: #888; margin-top: 2px; }
+  .accordion-header .acc-arrow { font-size: 18px; color: #999; transition: transform 0.2s; }
+  .accordion.open .acc-arrow { transform: rotate(180deg); }
+  .accordion-body { display: none; padding: 12px 14px; background: #fff; }
+  .accordion.open .accordion-body { display: block; }
+
+  /* Team entry */
+  .team-entry {
+    border: 1px solid #eee; border-radius: 10px;
+    padding: 12px; margin-bottom: 8px; background: #fafbfc;
+  }
+  .team-entry:last-child { margin-bottom: 0; }
+  .team-entry .team-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .team-entry .team-name { font-size: 15px; font-weight: 700; color: #333; }
+  .team-entry .team-app-no { font-size: 12px; color: #999; }
+  .team-field { margin-bottom: 8px; }
+  .team-field:last-child { margin-bottom: 0; }
+  .field-label { font-size: 11px; font-weight: 700; color: #666; margin-bottom: 4px; }
+  .team-entry input {
+    width: 100%; padding: 8px 10px; border: 1.5px solid #e0e0e0;
+    border-radius: 8px; font-size: 14px; background: #fff;
+    -webkit-appearance: none; font-family: inherit;
+  }
+  .team-entry input:focus { outline: none; border-color: #2980b9; }
+
+  /* ===== Staff Section ===== */
+  .normal-work-setting {
+    background: #f0f4f8;
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+  .normal-work-setting .setting-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1a5276;
+    margin-bottom: 10px;
+  }
+  .normal-work-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr 80px;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .normal-work-inputs input {
+    width: 100%; padding: 10px 8px; border: 2px solid #b0cfe0;
+    border-radius: 10px; font-size: 15px; background: white;
+    text-align: center; font-family: inherit; -webkit-appearance: none;
+  }
+  .normal-work-inputs input:focus { outline: none; border-color: #2980b9; }
+  .nw-label { font-size: 10px; color: #666; text-align: center; margin-bottom: 2px; }
+
+  .apply-all-btn {
+    width: 100%; padding: 12px; background: #2980b9; color: white;
+    border: none; border-radius: 10px; font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: opacity 0.2s;
+  }
+  .apply-all-btn:active { opacity: 0.8; }
+
+  .staff-entry {
+    border: 1.5px solid #eee; border-radius: 12px;
+    padding: 10px 12px; margin-bottom: 6px; background: #fafbfc;
+    transition: all 0.2s;
+  }
+  .staff-entry.has-name { border-color: #b0cfe0; background: #f8fbfd; }
+  .staff-entry .staff-row-top {
+    display: grid; grid-template-columns: 24px 1fr auto; gap: 8px; align-items: center;
+  }
+  .staff-entry .staff-num { font-size: 12px; font-weight: 700; color: #999; text-align: center; }
+  .staff-entry select {
+    width: 100%; padding: 8px 10px; border: 1.5px solid #e0e0e0;
+    border-radius: 8px; font-size: 14px; background: #fff;
+    font-family: inherit;
+  }
+  .staff-entry select:focus { outline: none; border-color: #2980b9; }
+
+  /* Toggle switch */
+  .nw-toggle {
+    display: flex; align-items: center; gap: 4px; cursor: pointer;
+    font-size: 11px; font-weight: 700; color: #999; white-space: nowrap;
+    user-select: none; -webkit-user-select: none;
+  }
+  .nw-toggle input[type="checkbox"] { display: none; }
+  .nw-toggle .switch {
+    width: 36px; height: 20px; background: #ddd; border-radius: 10px;
+    position: relative; transition: background 0.2s;
+  }
+  .nw-toggle .switch::after {
+    content: ''; position: absolute; top: 2px; left: 2px;
+    width: 16px; height: 16px; background: white; border-radius: 50%;
+    transition: transform 0.2s;
+  }
+  .nw-toggle input:checked + .switch { background: #27ae60; }
+  .nw-toggle input:checked + .switch::after { transform: translateX(16px); }
+
+  .staff-entry .staff-row-bottom {
+    display: grid; grid-template-columns: 1fr 1fr 70px; gap: 6px;
+    margin-top: 6px;
+  }
+  .staff-entry .staff-row-bottom.collapsed { display: none; }
+  .staff-entry input {
+    width: 100%; padding: 8px 8px; border: 1.5px solid #e0e0e0;
+    border-radius: 8px; font-size: 14px; background: #fff;
+    -webkit-appearance: none; font-family: inherit;
+  }
+  .staff-entry input:focus { outline: none; border-color: #2980b9; }
+  .staff-entry input:disabled { background: #e8f5e9; color: #2e7d32; border-color: #c8e6c9; }
+  .staff-entry input[type="time"] { font-size: 14px; }
+  .staff-entry input[type="number"] { font-size: 14px; }
+  .staff-field-label { font-size: 10px; color: #999; margin-bottom: 2px; }
+
+  /* Report textarea section */
+  .report-section { background: #f0f4f8; border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+  .report-section .section-title { border-bottom-color: #d0dde8; }
+
+  /* Validation error */
+  .validation-error {
+    background: #fdecea; color: #c0392b; padding: 12px 16px;
+    border-radius: 10px; margin-bottom: 12px; font-size: 13px;
+  }
+
+  /* Cancelled badge */
+  .cancelled-badge {
+    display: inline-block; background: #fdecea; color: #c0392b;
+    padding: 2px 8px; border-radius: 8px; font-size: 11px; font-weight: 700;
+    margin-left: 8px;
+  }
+  .cancel-toggle-row {
+    padding: 8px 0 12px; border-bottom: 1px solid #eee; margin-bottom: 10px;
+  }
+  .cancel-toggle {
+    display: flex; align-items: center; gap: 8px; cursor: pointer;
+    font-size: 14px; font-weight: 700; color: #c0392b;
+  }
+  .cancel-toggle input[type="checkbox"] {
+    width: 20px; height: 20px; accent-color: #c0392b;
+  }
+  .teams-disabled { opacity: 0.4; pointer-events: none; }
+
+  /* Check items */
+  .check-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 0; border-bottom: 1px solid #eee;
+  }
+  .check-item:last-child { border-bottom: none; }
+  .check-item input[type="checkbox"] {
+    width: 22px; height: 22px; accent-color: #27ae60; flex-shrink: 0;
+  }
+  .check-item label { font-size: 14px; color: #333; cursor: pointer; }
+
+  /* Submit button */
+  .submit-btn {
+    width: 100%; padding: 18px;
+    background: linear-gradient(135deg, #c0392b, #e74c3c);
+    color: white; border: none; border-radius: 14px;
+    font-size: 17px; font-weight: 700; cursor: pointer;
+    margin-top: 8px; transition: opacity 0.2s; letter-spacing: 1px;
+  }
+  .submit-btn:active { opacity: 0.8; transform: scale(0.98); }
+  .submit-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+  .back-btn {
+    width: 100%; padding: 14px; background: white; color: #999;
+    border: 2px solid #e0e0e0; border-radius: 14px; font-size: 14px;
+    cursor: pointer; margin-top: 8px;
+  }
+  .back-btn:active { background: #f5f5f5; }
+
+  /* Confirm overlay */
+  #confirm-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5); z-index: 9000; display: none;
+    align-items: flex-end; justify-content: center;
+  }
+  #confirm-overlay.show { display: flex; }
+  .confirm-sheet {
+    background: white; border-radius: 20px 20px 0 0;
+    padding: 24px 16px 32px; width: 100%; max-width: 480px;
+    max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .confirm-title { font-size: 17px; font-weight: 700; text-align: center; margin-bottom: 16px; color: #1a5276; }
+  .confirm-section { background: #f0f4f8; border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+  .confirm-section-title { font-size: 13px; font-weight: 700; color: #1a5276; margin-bottom: 6px; }
+  .confirm-item { font-size: 13px; padding: 3px 0; color: #555; }
+  .confirm-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+  .confirm-back-btn {
+    padding: 16px; background: white; color: #666;
+    border: 2px solid #e0e0e0; border-radius: 14px; font-size: 15px; font-weight: 700; cursor: pointer;
+  }
+  .confirm-send-btn {
+    padding: 16px; background: linear-gradient(135deg, #c0392b, #e74c3c);
+    color: white; border: none; border-radius: 14px; font-size: 15px; font-weight: 700; cursor: pointer;
+  }
+  .confirm-send-btn:active { opacity: 0.8; }
+
+  /* Done screen */
+  #done-screen { display: none; text-align: center; padding: 60px 20px; }
+  #done-screen.show { display: block; }
+  .done-check {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 20px; font-size: 40px; color: white;
+  }
+  .done-title { font-size: 22px; font-weight: 700; color: #333; margin-bottom: 8px; }
+  .done-subtitle { font-size: 14px; color: #888; }
+  .done-error { background: #fdecea; border-radius: 10px; padding: 12px; margin-top: 16px; color: #c0392b; font-size: 13px; }
+
+  /* Error banner */
+  .error-banner { background: #fdecea; color: #c0392b; padding: 12px 16px; border-radius: 10px; margin-bottom: 12px; font-size: 13px; display: none; }
+  .error-banner.show { display: block; }
+
+  /* Utility */
+  .hidden { display: none !important; }
+  .mt-8 { margin-top: 8px; }
+  .mb-12 { margin-bottom: 12px; }
+  .text-center { text-align: center; }
+  .text-sm { font-size: 13px; color: #888; }
+</style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loading-text">データを取得中...</div>
+</div>
+
+<!-- Confirm overlay -->
+<div id="confirm-overlay">
+  <div class="confirm-sheet">
+    <div class="confirm-title">送信内容の確認</div>
+    <div id="confirm-body"></div>
+    <div class="confirm-buttons">
+      <button class="confirm-back-btn" onclick="closeConfirm()">戻って修正</button>
+      <button class="confirm-send-btn" onclick="doSubmit()">送信する</button>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <!-- Header -->
+  <div class="header">
+    <h1>完了報告システム</h1>
+    <div class="badge" id="today-display">-</div>
+  </div>
+
+  <!-- Steps -->
+  <div class="steps" id="step-dots">
+    <div class="step-dot active"></div>
+    <div class="step-dot"></div>
+  </div>
+
+  <!-- Error banner -->
+  <div class="error-banner" id="error-banner"></div>
+
+  <!-- ===== Step 1: Venue Selection ===== -->
+  <div id="step1">
+    <div class="section">
+      <div class="section-title">&#x1F4CB; 入力者</div>
+      <div class="form-group">
+        <label>お名前 <span class="req">*必須</span></label>
+        <input type="text" id="staff-name" placeholder="例: 後藤">
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">&#x1F3DF; 会場選択</div>
+      <div class="date-nav" id="date-nav">
+        <button class="date-btn" onclick="filterVenues('unreported')">未報告</button>
+        <button class="date-btn" onclick="filterVenues('yesterday')">前日</button>
+        <button class="date-btn active" onclick="filterVenues('today')">本日</button>
+        <button class="date-btn" onclick="filterVenues('tomorrow')">翌日</button>
+      </div>
+      <div id="venue-list">
+        <p class="text-sm text-center">データを読み込み中...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Step 2: Tabbed Report ===== -->
+  <div id="step2" class="hidden">
+    <button class="back-btn mb-12" onclick="goStep1()" id="back-to-venues-btn">&#x2190; 会場選択に戻る</button>
+
+    <!-- Tab Bar -->
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab(0)">運営報告</button>
+      <button class="tab-btn" onclick="switchTab(1)">スタッフ</button>
+      <button class="tab-btn" onclick="switchTab(2)">報告</button>
+    </div>
+
+    <!-- Tab 0: 運営報告 -->
+    <div class="tab-content active" id="tab-0">
+      <div class="section">
+        <div class="section-title">&#x1F3C0; 運営報告</div>
+        <div id="blocks-area"></div>
+      </div>
+    </div>
+
+    <!-- Tab 1: スタッフ勤務 -->
+    <div class="tab-content" id="tab-1">
+      <div class="section">
+        <div class="section-title">&#x1F464; スタッフ勤務</div>
+
+        <!-- 通常勤務設定 -->
+        <div class="normal-work-setting">
+          <div class="setting-title">通常勤務の時間</div>
+          <div class="normal-work-inputs">
+            <div>
+              <div class="nw-label">出勤</div>
+              <input type="time" id="nw-start" value="09:00">
+            </div>
+            <div>
+              <div class="nw-label">退勤</div>
+              <input type="time" id="nw-end" value="18:00">
+            </div>
+            <div>
+              <div class="nw-label">休憩(分)</div>
+              <input type="number" id="nw-break" value="60" min="0" step="15">
+            </div>
+          </div>
+          <button class="apply-all-btn" onclick="applyAllNormal()">全員に通常勤務を適用</button>
+        </div>
+
+        <div id="staff-area"></div>
+      </div>
+    </div>
+
+    <!-- Tab 2: 報告 + チェック + 送信 -->
+    <div class="tab-content" id="tab-2">
+      <div class="report-section">
+        <div class="section-title">&#x1F4DD; 現場報告</div>
+        <div class="form-group">
+          <label>⚠️ アクシデント報告</label>
+          <textarea id="accident-report" placeholder="事故・怪我・トラブル等あれば記入&#10;（例: 選手が足首を捻挫、救急搬送なし）" rows="4"></textarea>
+        </div>
+        <div class="form-group">
+          <label>📋 その他報告</label>
+          <textarea id="other-report" placeholder="連絡事項・気になった点など&#10;（例: 体育館の照明1本切れ、管理者に報告済み）" rows="4"></textarea>
+        </div>
+      </div>
+
+      <!-- 大会運営最終チェック -->
+      <div class="section">
+        <div class="section-title">&#x2705; 大会運営最終チェック</div>
+        <div id="check-items-area"></div>
+      </div>
+
+      <button class="submit-btn" onclick="showConfirm()">完了報告を送信</button>
+    </div>
+  </div>
+
+  <!-- ===== Done Screen ===== -->
+  <div id="done-screen">
+    <div class="done-check">&#x2713;</div>
+    <div class="done-title">報告完了</div>
+    <div class="done-subtitle" id="done-venue-name"></div>
+    <div class="done-subtitle">完了報告が送信されました</div>
+    <div class="done-error hidden" id="done-error"></div>
+    <button onclick="location.reload()" style="margin-top:24px;padding:14px 32px;background:linear-gradient(135deg,#2980b9,#3498db);color:white;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;">別の会場を報告する</button>
+  </div>
+</div>
+
+<script>
+// ========== Config ==========
+const API_URL = 'https://script.google.com/macros/s/AKfycbzejwlaQBa4v1sWbDhWhiSHDt3ydAhyydu_3sLqFTVYaP2PY3de4fVxCfA1JNVgYOSX/exec';
+const LS_KEY = 'houkoku_staff';
+
+// ========== State ==========
+let venueData = null;
+let selectedVenue = null;
+let selectedIndex = -1;
+let isSending = false;
+let currentTab = 0;
+
+// ========== Init ==========
+document.addEventListener('DOMContentLoaded', function() {
+  loadData();
+});
+
+async function loadData() {
+  showLoading('データを取得中...');
+  try {
+    var res = await fetch(API_URL + '?action=getVenueReport');
+    var data = await res.json();
+    venueData = data;
+    document.getElementById('today-display').textContent = data.todayDisplay || '';
+
+    // 入力者名を復元
+    var saved = localStorage.getItem(LS_KEY);
+    if (saved) document.getElementById('staff-name').value = saved;
+
+    renderVenueList(data.venues || []);
+  } catch (e) {
+    showError('データの取得に失敗しました: ' + e.message);
+    document.getElementById('venue-list').innerHTML = '<p class="text-sm text-center" style="color:#c0392b;">取得失敗。リロードしてください。</p>';
+  } finally {
+    hideLoading();
+  }
+}
+
+// ========== Date Filter ==========
+var currentFilter = 'today';
+
+function filterVenues(filter) {
+  currentFilter = filter;
+  var btns = document.querySelectorAll('.date-btn');
+  var labels = ['unreported', 'yesterday', 'today', 'tomorrow'];
+  btns.forEach(function(b, i) { b.classList.toggle('active', labels[i] === filter); });
+
+  if (filter === 'unreported') {
+    loadUnreportedVenues();
+  } else {
+    renderVenueList(venueData.venues || []);
+  }
+}
+
+function loadUnreportedVenues() {
+  var el = document.getElementById('venue-list');
+  el.innerHTML = '<p class="text-sm text-center">未報告データを取得中...</p>';
+  fetch(API_URL + '?action=getUnreported')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) { el.innerHTML = '<p class="text-sm text-center text-red">' + esc(data.error) + '</p>'; return; }
+      var list = data.unreported || [];
+      if (!list.length) { el.innerHTML = '<p class="text-sm text-center">未報告の会場はありません（直近1週間）</p>'; return; }
+      el.innerHTML = list.map(function(v) {
+        return '<div class="venue-card" onclick="loadAndSelectVenue(\'' + esc(v.spreadsheetId) + '\',\'' + esc(v.sheetName) + '\')">' +
+          '<div class="venue-info">' +
+            '<div class="venue-name">(' + esc(v.dateStr) + ') ' + esc(v.sheetName) + '</div>' +
+            '<div class="venue-meta">' + (v.blockCount || '') + ' 大会 <span style="color:#e53e3e;">未報告</span></div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    })
+    .catch(function(e) { el.innerHTML = '<p class="text-sm text-center text-red">取得エラー: ' + e.message + '</p>'; });
+}
+
+function loadAndSelectVenue(ssId, sheetName) {
+  // 既に読み込み済みの会場か確認
+  var venues = venueData.venues || [];
+  for (var i = 0; i < venues.length; i++) {
+    if (venues[i].spreadsheetId === ssId && venues[i].sheetName === sheetName) {
+      selectVenue(i);
+      return;
+    }
+  }
+  // 未読み込み → API で個別取得
+  var el = document.getElementById('venue-list');
+  el.innerHTML = '<p class="text-sm text-center">会場データを読み込み中...</p>';
+  fetch(API_URL + '?action=getVenueBySheet&ssId=' + encodeURIComponent(ssId) + '&sheetName=' + encodeURIComponent(sheetName))
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) { el.innerHTML = '<p class="text-sm text-center text-red">' + esc(data.error) + '</p>'; return; }
+      // venueDataに追加
+      if (!venueData.venues) venueData.venues = [];
+      venueData.venues.push(data.venue);
+      if (data.memberList) venueData.memberList = data.memberList;
+      var idx = venueData.venues.length - 1;
+      selectVenue(idx);
+    })
+    .catch(function(e) { el.innerHTML = '<p class="text-sm text-center text-red">取得エラー: ' + e.message + '</p>'; });
+}
+
+// ========== Venue List ==========
+function renderVenueList(venues) {
+  var el = document.getElementById('venue-list');
+  if (!venues.length) {
+    el.innerHTML = '<p class="text-sm text-center">会場データがありません</p>';
+    return;
+  }
+
+  // フィルタ適用
+  var filtered = venues.filter(function(v) {
+    if (currentFilter === 'unreported') {
+      return !v.completed && (v.dayCategory === 'past' || v.dayCategory === 'yesterday' || v.dayCategory === 'today');
+    }
+    if (currentFilter === 'yesterday') return v.dayCategory === 'yesterday';
+    if (currentFilter === 'tomorrow') return v.dayCategory === 'tomorrow';
+    return v.dayCategory === currentFilter;
+  });
+
+  if (!filtered.length) {
+    var msgs = { unreported: '未報告の会場はありません（直近1週間）', yesterday: '前日の会場はありません', today: '本日の会場はありません', tomorrow: '翌日の会場はありません' };
+    el.innerHTML = '<p class="text-sm text-center">' + (msgs[currentFilter] || '該当なし') + '</p>';
+    return;
+  }
+
+  el.innerHTML = filtered.map(function(v) {
+    var realIndex = venues.indexOf(v);
+    var blockCount = (v.blocks || []).length;
+    var isDone = v.completed;
+    var dateLabel = v.dateStr ? '(' + v.dateStr + ')' : '';
+    var cardClass = 'venue-card' + (isDone ? ' venue-done' : '');
+    return '<div class="' + cardClass + '" onclick="selectVenue(' + realIndex + ')" id="vc-' + realIndex + '">' +
+      '<div class="venue-info">' +
+        '<div class="venue-name">' + esc(dateLabel + ' ' + v.sheetName) + '</div>' +
+        '<div class="venue-meta">' + blockCount + ' 大会</div>' +
+      '</div>' +
+      (isDone ? '<div class="venue-status done">報告済</div>' : '') +
+    '</div>';
+  }).join('');
+}
+
+function selectVenue(idx) {
+  var venue = venueData.venues[idx];
+  if (venue.completed) {
+    alert('この会場は報告済みです。編集できません。');
+    return;
+  }
+  var name = document.getElementById('staff-name').value.trim();
+  if (!name) {
+    alert('入力者名を入力してください');
+    document.getElementById('staff-name').focus();
+    return;
+  }
+  localStorage.setItem(LS_KEY, name);
+  selectedIndex = idx;
+  selectedVenue = venue;
+  goStep2();
+}
+
+// ========== Step Navigation ==========
+function goStep1() {
+  document.getElementById('step1').classList.remove('hidden');
+  document.getElementById('step2').classList.add('hidden');
+  updateDots(0);
+}
+
+function goStep2() {
+  document.getElementById('step1').classList.add('hidden');
+  document.getElementById('step2').classList.remove('hidden');
+  document.getElementById('back-to-venues-btn').classList.remove('hidden');
+  updateDots(1);
+  switchTab(0);
+  renderStep2();
+  window.scrollTo(0, 0);
+}
+
+function updateDots(step) {
+  var dots = document.querySelectorAll('#step-dots .step-dot');
+  dots.forEach(function(d, i) { d.classList.toggle('active', i === step); });
+}
+
+// ========== Tab Switching ==========
+function switchTab(idx) {
+  currentTab = idx;
+  var btns = document.querySelectorAll('.tab-btn');
+  btns.forEach(function(b, i) { b.classList.toggle('active', i === idx); });
+  for (var i = 0; i < 3; i++) {
+    var tab = document.getElementById('tab-' + i);
+    tab.classList.toggle('active', i === idx);
+  }
+  window.scrollTo(0, document.querySelector('.tab-bar').offsetTop - 12);
+}
+
+// ========== Render Step 2 ==========
+function renderStep2() {
+  renderBlocks();
+  renderStaff();
+  var sa = selectedVenue.staffArea || {};
+  document.getElementById('accident-report').value = sa.accidentReport || '';
+  document.getElementById('other-report').value = sa.otherReport || '';
+  renderCheckItems();
+  restoreAutoSave();
+  setupAutoSaveListeners();
+  // Set normal work defaults
+  document.getElementById('nw-start').value = sa.defaultStart || '09:00';
+  document.getElementById('nw-end').value = sa.defaultEnd || '18:00';
+  document.getElementById('nw-break').value = sa.defaultBreak || 60;
+}
+
+// ----- Blocks / Teams -----
+function renderBlocks() {
+  var area = document.getElementById('blocks-area');
+  var blocks = selectedVenue.blocks || [];
+  if (!blocks.length) {
+    area.innerHTML = '<p class="text-sm">大会データがありません</p>';
+    return;
+  }
+  area.innerHTML = blocks.map(function(b, bi) {
+    var isOpen = bi === 0;
+    var teams = b.teams || [];
+    var titleParts = [];
+    if (b.startTime) titleParts.push(b.startTime);
+    titleParts.push(b.tournamentName || '大会 ' + (bi + 1));
+    var cancelledHtml = b.cancelled ? '<span class="cancelled-badge">中止</span>' : '';
+    return '<div class="accordion ' + (isOpen ? 'open' : '') + '" id="acc-' + bi + '">' +
+      '<div class="accordion-header" onclick="toggleAccordion(' + bi + ')">' +
+        '<div>' +
+          '<div class="acc-title">' + esc(titleParts.join(' ')) + cancelledHtml + '</div>' +
+          '<div class="acc-sub">' + esc(b.tournamentId || '') + ' / ' + teams.length + 'チーム</div>' +
+        '</div>' +
+        '<div class="acc-arrow">&#x25BC;</div>' +
+      '</div>' +
+      '<div class="accordion-body">' +
+        '<div class="cancel-toggle-row">' +
+          '<label class="cancel-toggle"><input type="checkbox" id="cancel-' + bi + '" ' + (b.cancelled ? 'checked' : '') + ' onchange="onCancelToggle(' + bi + ')"><span>大会中止</span></label>' +
+        '</div>' +
+        '<div id="teams-' + bi + '" class="' + (b.cancelled ? 'teams-disabled' : '') + '">' +
+          teams.map(function(t, ti) { return renderTeamEntry(bi, ti, t, b.cancelled); }).join('') +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderTeamEntry(bi, ti, t, cancelled) {
+  var salesOptions = [['', '---'], ['なし', 'なし'], ['即決1', '即決1'], ['即決2', '即決2'], ['即決3', '即決3'], ['即決4', '即決4'], ['即決5', '即決5']];
+  var rankOptions = [['', '---'], ['1位', '1位'], ['2位', '2位'], ['3位', '3位'], ['4位', '4位'], ['5位', '5位'], ['6位以下', '6位以下']];
+
+  var disabledAttr = cancelled ? ' disabled' : '';
+  var selectStyle = 'width:100%;padding:8px 10px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:inherit;' + (cancelled ? 'background:#eee;color:#999;' : '');
+
+  var salesHtml = '<select id="sales-' + bi + '-' + ti + '" style="' + selectStyle + '"' + disabledAttr + '>';
+  salesOptions.forEach(function(o) {
+    salesHtml += '<option value="' + esc(o[0]) + '"' + (t.salesActivity === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>';
+  });
+  salesHtml += '</select>';
+
+  var rankHtml = '<select id="rank-' + bi + '-' + ti + '" style="' + selectStyle + '"' + disabledAttr + '>';
+  rankOptions.forEach(function(o) {
+    rankHtml += '<option value="' + esc(o[0]) + '"' + (t.rank === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>';
+  });
+  rankHtml += '</select>';
+
+  return '<div class="team-entry">' +
+    '<div class="team-header">' +
+      '<div class="team-name">' + esc(t.teamName) + '</div>' +
+      '<div class="team-app-no">#' + esc(t.applicationNo || '') + '</div>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">' +
+      '<div><div class="field-label">営業活動</div>' + salesHtml + '</div>' +
+      '<div><div class="field-label">順位</div>' + rankHtml + '</div>' +
+    '</div>' +
+    '<div class="team-field">' +
+      '<div class="field-label">備考</div>' +
+      '<input type="text" id="remarks-' + bi + '-' + ti + '" value="' + esc(t.remarks || '') + '" placeholder="備考">' +
+    '</div>' +
+  '</div>';
+}
+
+function toggleAccordion(bi) {
+  document.getElementById('acc-' + bi).classList.toggle('open');
+}
+
+function onCancelToggle(bi) {
+  var cb = document.getElementById('cancel-' + bi);
+  var teamsDiv = document.getElementById('teams-' + bi);
+  var header = document.getElementById('acc-' + bi).querySelector('.acc-title');
+  var badge = header.querySelector('.cancelled-badge');
+  if (cb.checked) {
+    teamsDiv.classList.add('teams-disabled');
+    if (!badge) header.insertAdjacentHTML('beforeend', '<span class="cancelled-badge">中止</span>');
+  } else {
+    teamsDiv.classList.remove('teams-disabled');
+    if (badge) badge.remove();
+  }
+}
+
+// ----- Check Items -----
+function renderCheckItems() {
+  var sa = selectedVenue.staffArea || {};
+  var items = sa.checkItems || [];
+  var area = document.getElementById('check-items-area');
+  if (!items.length) {
+    area.innerHTML = '<p class="text-sm">チェック項目がありません</p>';
+    return;
+  }
+  area.innerHTML = items.map(function(item, i) {
+    return '<div class="check-item">' +
+      '<input type="checkbox" id="chk-' + i + '" ' + (item.checked ? 'checked' : '') + '>' +
+      '<label for="chk-' + i + '">' + esc(item.text) + '</label>' +
+    '</div>';
+  }).join('');
+}
+
+// ----- Staff -----
+function renderStaff() {
+  var sa = selectedVenue.staffArea || {};
+  var memberList = (venueData.memberList && venueData.memberList.length > 0) ? venueData.memberList : (selectedVenue.memberList || []);
+  var area = document.getElementById('staff-area');
+  var slots = sa.staff || [];
+  var maxSlots = 13;
+  var display = [];
+  for (var i = 0; i < maxSlots; i++) {
+    display.push(slots[i] || { row: 0, name: '', checkIn: '', checkOut: '', breakMin: 0 });
+  }
+
+  var optionsHtml = '<option value="">--</option>';
+  memberList.forEach(function(n) {
+    optionsHtml += '<option value="' + esc(n) + '">' + esc(n) + '</option>';
+  });
+
+  area.innerHTML = display.map(function(s, i) {
+    var hasName = s.name && s.name.trim() !== '';
+    var isNormal = false; // default: not checked
+    return '<div class="staff-entry ' + (hasName ? 'has-name' : '') + '" id="se-' + i + '">' +
+      '<div class="staff-row-top">' +
+        '<div class="staff-num">' + (i + 1) + '</div>' +
+        '<select id="sn-' + i + '" onchange="onStaffNameChange(' + i + ')">' +
+          optionsHtml +
+        '</select>' +
+        '<label class="nw-toggle">' +
+          '<input type="checkbox" id="snw-' + i + '" onchange="onNormalWorkToggle(' + i + ')">' +
+          '<span class="switch"></span>' +
+          '<span>通常</span>' +
+        '</label>' +
+      '</div>' +
+      '<div class="staff-row-bottom ' + (!hasName ? 'collapsed' : '') + '" id="sr-' + i + '">' +
+        '<div>' +
+          '<div class="staff-field-label">出勤</div>' +
+          '<input type="time" id="sci-' + i + '" value="' + esc(s.checkIn || '') + '">' +
+        '</div>' +
+        '<div>' +
+          '<div class="staff-field-label">退勤</div>' +
+          '<input type="time" id="sco-' + i + '" value="' + esc(s.checkOut || '') + '">' +
+        '</div>' +
+        '<div>' +
+          '<div class="staff-field-label">休憩</div>' +
+          '<input type="number" id="sb-' + i + '" value="' + (s.breakMin || '') + '" placeholder="分" min="0" step="15">' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  // Restore selected names
+  display.forEach(function(s, i) {
+    if (s.name) {
+      var sel = document.getElementById('sn-' + i);
+      sel.value = s.name;
+      // If name not in list, add as custom option
+      if (sel.value !== s.name) {
+        var opt = document.createElement('option');
+        opt.value = s.name;
+        opt.textContent = s.name;
+        sel.appendChild(opt);
+        sel.value = s.name;
+      }
+    }
+  });
+}
+
+function onStaffNameChange(idx) {
+  var sel = document.getElementById('sn-' + idx);
+  var hasName = sel.value.trim() !== '';
+  var entry = document.getElementById('se-' + idx);
+  var bottom = document.getElementById('sr-' + idx);
+  entry.classList.toggle('has-name', hasName);
+  bottom.classList.toggle('collapsed', !hasName);
+}
+
+function onNormalWorkToggle(idx) {
+  var cb = document.getElementById('snw-' + idx);
+  var sci = document.getElementById('sci-' + idx);
+  var sco = document.getElementById('sco-' + idx);
+  var sb = document.getElementById('sb-' + idx);
+  if (cb.checked) {
+    sci.value = document.getElementById('nw-start').value;
+    sco.value = document.getElementById('nw-end').value;
+    sb.value = document.getElementById('nw-break').value;
+    sci.disabled = true;
+    sco.disabled = true;
+    sb.disabled = true;
+  } else {
+    sci.disabled = false;
+    sco.disabled = false;
+    sb.disabled = false;
+  }
+}
+
+function applyAllNormal() {
+  for (var i = 0; i < 13; i++) {
+    var sel = document.getElementById('sn-' + i);
+    if (sel && sel.value.trim()) {
+      var cb = document.getElementById('snw-' + i);
+      cb.checked = true;
+      onNormalWorkToggle(i);
+      // Expand row if collapsed
+      var bottom = document.getElementById('sr-' + i);
+      bottom.classList.remove('collapsed');
+      document.getElementById('se-' + i).classList.add('has-name');
+    }
+  }
+}
+
+// ========== Confirm ==========
+function validateForm() {
+  var errors = [];
+  var blocks = selectedVenue.blocks || [];
+
+  // 営業活動・順位チェック（中止ブロックはスキップ）
+  blocks.forEach(function(b, bi) {
+    var isCancelled = document.getElementById('cancel-' + bi).checked;
+    if (isCancelled) return;
+    (b.teams || []).forEach(function(t, ti) {
+      var sales = document.getElementById('sales-' + bi + '-' + ti).value;
+      var rank = document.getElementById('rank-' + bi + '-' + ti).value;
+      if (!sales) errors.push(esc(t.teamName) + ' の営業活動が未選択です');
+    });
+  });
+
+  // レ点全チェック
+  var sa = selectedVenue.staffArea || {};
+  var checkItems = sa.checkItems || [];
+  var unchecked = 0;
+  checkItems.forEach(function(item, i) {
+    if (!document.getElementById('chk-' + i).checked) unchecked++;
+  });
+  if (unchecked > 0) errors.push('大会運営チェックが ' + unchecked + ' 件未チェックです');
+
+  return errors;
+}
+
+function showConfirm() {
+  if (isSending) return;
+
+  // バリデーション
+  var errors = validateForm();
+  if (errors.length > 0) {
+    // 報告タブに切り替え（チェック項目が見えるように）
+    switchTab(2);
+    alert(errors.join('\n'));
+    return;
+  }
+
+  var body = document.getElementById('confirm-body');
+  var html = '';
+
+  var staffName = document.getElementById('staff-name').value.trim();
+  html += '<div class="confirm-section">' +
+    '<div class="confirm-section-title">入力者</div>' +
+    '<div class="confirm-item">' + esc(staffName) + '</div>' +
+    '<div class="confirm-item">会場: ' + esc(selectedVenue.sheetName) + '</div>' +
+  '</div>';
+
+  // Teams summary
+  var blocks = selectedVenue.blocks || [];
+  blocks.forEach(function(b, bi) {
+    var teams = b.teams || [];
+    var teamLines = teams.map(function(t, ti) {
+      var sales = document.getElementById('sales-' + bi + '-' + ti).value;
+      var rank = document.getElementById('rank-' + bi + '-' + ti).value;
+      var remarks = document.getElementById('remarks-' + bi + '-' + ti).value;
+      var parts = [esc(t.teamName)];
+      if (sales) parts.push('営業:' + esc(sales));
+      if (rank) parts.push(esc(rank));
+      if (remarks) parts.push(esc(remarks));
+      return '<div class="confirm-item">' + parts.join(' / ') + '</div>';
+    }).join('');
+    html += '<div class="confirm-section">' +
+      '<div class="confirm-section-title">' + esc(b.tournamentName || '大会 ' + (bi + 1)) + '</div>' +
+      teamLines +
+    '</div>';
+  });
+
+  // Staff summary
+  var staffLines = '';
+  for (var i = 0; i < 13; i++) {
+    var n = document.getElementById('sn-' + i).value.trim();
+    if (!n) continue;
+    var ci = document.getElementById('sci-' + i).value;
+    var co = document.getElementById('sco-' + i).value;
+    var br = document.getElementById('sb-' + i).value;
+    var nw = document.getElementById('snw-' + i).checked ? ' [通常]' : '';
+    staffLines += '<div class="confirm-item">' + esc(n) + ' ' + ci + '-' + co + ' 休憩' + (br || 0) + '分' + nw + '</div>';
+  }
+  if (staffLines) {
+    html += '<div class="confirm-section">' +
+      '<div class="confirm-section-title">スタッフ勤務</div>' +
+      staffLines +
+    '</div>';
+  }
+
+  // Reports
+  var acc = document.getElementById('accident-report').value.trim();
+  var other = document.getElementById('other-report').value.trim();
+  if (acc || other) {
+    html += '<div class="confirm-section">' +
+      '<div class="confirm-section-title">現場報告</div>' +
+      (acc ? '<div class="confirm-item">アクシデント: ' + esc(acc) + '</div>' : '') +
+      (other ? '<div class="confirm-item">その他: ' + esc(other) + '</div>' : '') +
+    '</div>';
+  }
+
+  body.innerHTML = html;
+  document.getElementById('confirm-overlay').classList.add('show');
+}
+
+function closeConfirm() {
+  document.getElementById('confirm-overlay').classList.remove('show');
+}
+
+// ========== Submit ==========
+async function doSubmit() {
+  if (isSending) return;
+  isSending = true;
+  closeConfirm();
+  showLoading('送信中...');
+  try {
+    var payload = buildPayload();
+    var res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    });
+    var result = await res.json();
+    if (result.error) {
+      showDone(result.error);
+    } else {
+      clearAutoSave();
+      showDone(null);
+    }
+  } catch (e) {
+    showDone('送信エラー: ' + e.message);
+  } finally {
+    isSending = false;
+    hideLoading();
+  }
+}
+
+function buildPayload() {
+  var blocks = selectedVenue.blocks || [];
+  var teams = [];
+  var cancelledBlocks = [];
+  blocks.forEach(function(b, bi) {
+    var isCancelled = document.getElementById('cancel-' + bi).checked;
+    cancelledBlocks.push({ headRow: b.headRow, cancelled: isCancelled });
+    (b.teams || []).forEach(function(t, ti) {
+      teams.push({
+        teamRow: t.teamRow,
+        salesActivity: document.getElementById('sales-' + bi + '-' + ti).value,
+        rank: document.getElementById('rank-' + bi + '-' + ti).value,
+        remarks: document.getElementById('remarks-' + bi + '-' + ti).value
+      });
+    });
+  });
+
+  var staffList = [];
+  var sa = selectedVenue.staffArea || {};
+  var slots = sa.staff || [];
+  for (var i = 0; i < 13; i++) {
+    var name = document.getElementById('sn-' + i).value.trim();
+    var row = (slots[i] && slots[i].row) ? slots[i].row : (390 + i);
+    staffList.push({
+      row: row,
+      name: name,
+      checkIn: document.getElementById('sci-' + i).value,
+      checkOut: document.getElementById('sco-' + i).value,
+      breakMin: parseInt(document.getElementById('sb-' + i).value) || 0,
+      normalWork: document.getElementById('snw-' + i).checked
+    });
+  }
+
+  return {
+    action: 'submitReport',
+    staffName: document.getElementById('staff-name').value.trim(),
+    spreadsheetId: selectedVenue.spreadsheetId,
+    sheetName: selectedVenue.sheetName,
+    teams: teams,
+    cancelledBlocks: cancelledBlocks,
+    staffList: staffList,
+    accidentReport: document.getElementById('accident-report').value.trim(),
+    otherReport: document.getElementById('other-report').value.trim(),
+    checkItems: buildCheckItems(),
+    markComplete: true
+  };
+}
+
+function buildCheckItems() {
+  var sa = selectedVenue.staffArea || {};
+  var items = sa.checkItems || [];
+  return items.map(function(item, i) {
+    return {
+      row: item.row,
+      checked: document.getElementById('chk-' + i).checked,
+    };
+  });
+}
+
+// ========== Done Screen ==========
+function showDone(errorMsg) {
+  document.getElementById('step1').classList.add('hidden');
+  document.getElementById('step2').classList.add('hidden');
+  document.getElementById('step-dots').classList.add('hidden');
+  var doneEl = document.getElementById('done-screen');
+  doneEl.classList.add('show');
+  var vnEl = document.getElementById('done-venue-name');
+  if (selectedVenue) {
+    vnEl.textContent = (selectedVenue.dateStr ? '(' + selectedVenue.dateStr + ') ' : '') + selectedVenue.sheetName;
+    vnEl.style.fontWeight = '600';
+    vnEl.style.color = '#333';
+    vnEl.style.marginBottom = '8px';
+  }
+  var errEl = document.getElementById('done-error');
+  if (errorMsg) {
+    errEl.textContent = errorMsg;
+    errEl.classList.remove('hidden');
+  } else {
+    errEl.classList.add('hidden');
+  }
+}
+
+// ========== Loading ==========
+function showLoading(msg) {
+  document.getElementById('loading-text').textContent = msg || '';
+  var el = document.getElementById('loading-overlay');
+  el.classList.remove('hidden');
+  el.style.opacity = '1';
+}
+function hideLoading() {
+  document.getElementById('loading-overlay').classList.add('hidden');
+}
+
+// ========== Error ==========
+function showError(msg) {
+  var el = document.getElementById('error-banner');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(function() { el.classList.remove('show'); }, 5000);
+}
+
+// ========== Auto Save ==========
+var SAVE_PREFIX = 'houkoku_save_';
+var autoSaveTimer = null;
+
+function getAutoSaveKey() {
+  if (!selectedVenue) return null;
+  return SAVE_PREFIX + selectedVenue.spreadsheetId + '_' + selectedVenue.sheetName;
+}
+
+function triggerAutoSave() {
+  if (autoSaveTimer) clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(doAutoSave, 1000);
+}
+
+function doAutoSave() {
+  var key = getAutoSaveKey();
+  if (!key) return;
+  var blocks = selectedVenue.blocks || [];
+  var data = { teams: {}, staff: {}, reports: {}, checks: {}, cancels: {} };
+
+  blocks.forEach(function(b, bi) {
+    data.cancels[bi] = document.getElementById('cancel-' + bi).checked;
+    (b.teams || []).forEach(function(t, ti) {
+      var s = document.getElementById('sales-' + bi + '-' + ti);
+      var r = document.getElementById('rank-' + bi + '-' + ti);
+      var rm = document.getElementById('remarks-' + bi + '-' + ti);
+      if (s) data.teams[bi + '-' + ti] = { sales: s.value, rank: r.value, remarks: rm.value };
+    });
+  });
+
+  for (var i = 0; i < 13; i++) {
+    var sn = document.getElementById('sn-' + i);
+    if (sn && sn.value) {
+      data.staff[i] = {
+        name: sn.value,
+        nw: document.getElementById('snw-' + i).checked,
+        ci: document.getElementById('sci-' + i).value,
+        co: document.getElementById('sco-' + i).value,
+        br: document.getElementById('sb-' + i).value,
+      };
+    }
+  }
+
+  data.reports.accident = document.getElementById('accident-report').value;
+  data.reports.other = document.getElementById('other-report').value;
+  data.reports.nwStart = document.getElementById('nw-start').value;
+  data.reports.nwEnd = document.getElementById('nw-end').value;
+  data.reports.nwBreak = document.getElementById('nw-break').value;
+
+  var checkItems = (selectedVenue.staffArea || {}).checkItems || [];
+  checkItems.forEach(function(item, i) {
+    var el = document.getElementById('chk-' + i);
+    if (el) data.checks[i] = el.checked;
+  });
+
+  try { localStorage.setItem(key, JSON.stringify(data)); } catch(e) {}
+}
+
+function restoreAutoSave() {
+  var key = getAutoSaveKey();
+  if (!key) return;
+  var raw = localStorage.getItem(key);
+  if (!raw) return;
+  try {
+    var data = JSON.parse(raw);
+
+    // Restore teams
+    var blocks = selectedVenue.blocks || [];
+    blocks.forEach(function(b, bi) {
+      if (data.cancels && data.cancels[bi]) {
+        var cb = document.getElementById('cancel-' + bi);
+        if (cb) { cb.checked = true; onCancelToggle(bi); }
+      }
+      (b.teams || []).forEach(function(t, ti) {
+        var saved = data.teams && data.teams[bi + '-' + ti];
+        if (saved) {
+          var s = document.getElementById('sales-' + bi + '-' + ti);
+          var r = document.getElementById('rank-' + bi + '-' + ti);
+          var rm = document.getElementById('remarks-' + bi + '-' + ti);
+          if (s) s.value = saved.sales || '';
+          if (r) r.value = saved.rank || '';
+          if (rm) rm.value = saved.remarks || '';
+        }
+      });
+    });
+
+    // Restore staff
+    if (data.staff) {
+      for (var i in data.staff) {
+        var s = data.staff[i];
+        var sn = document.getElementById('sn-' + i);
+        if (sn && s.name) {
+          sn.value = s.name;
+          onStaffNameChange(parseInt(i));
+          if (s.nw) {
+            document.getElementById('snw-' + i).checked = true;
+            onNormalWorkToggle(parseInt(i));
+          } else {
+            document.getElementById('sci-' + i).value = s.ci || '';
+            document.getElementById('sco-' + i).value = s.co || '';
+            document.getElementById('sb-' + i).value = s.br || '';
+          }
+        }
+      }
+    }
+
+    // Restore reports
+    if (data.reports) {
+      if (data.reports.accident) document.getElementById('accident-report').value = data.reports.accident;
+      if (data.reports.other) document.getElementById('other-report').value = data.reports.other;
+      if (data.reports.nwStart) document.getElementById('nw-start').value = data.reports.nwStart;
+      if (data.reports.nwEnd) document.getElementById('nw-end').value = data.reports.nwEnd;
+      if (data.reports.nwBreak) document.getElementById('nw-break').value = data.reports.nwBreak;
+    }
+
+    // Restore checks
+    if (data.checks) {
+      for (var ci in data.checks) {
+        var el = document.getElementById('chk-' + ci);
+        if (el) el.checked = data.checks[ci];
+      }
+    }
+  } catch(e) {}
+}
+
+function clearAutoSave() {
+  var key = getAutoSaveKey();
+  if (key) localStorage.removeItem(key);
+}
+
+function setupAutoSaveListeners() {
+  document.getElementById('step2').addEventListener('input', triggerAutoSave);
+  document.getElementById('step2').addEventListener('change', triggerAutoSave);
+}
+
+// ========== Util ==========
+function esc(s) {
+  if (!s) return '';
+  var d = document.createElement('div');
+  d.textContent = String(s);
+  return d.innerHTML;
+}
+</script>
+</body>
+</html>

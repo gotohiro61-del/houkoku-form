@@ -314,13 +314,21 @@ body{
       </div>
       <div id="tournament-list"></div>
     </div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button onclick="goHistoryScreen()" style="flex:1;padding:14px;background:#fff;color:#1d1d1f;border:1px solid #d2d2d7;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer" id="history-btn-dash">即決履歴 <span id="history-count-dash" style="color:#86868b"></span></button>
+      <button class="report-btn" onclick="goReport()" style="flex:1;margin-top:0">報告を入力</button>
+    </div>
+  </div>
+
+  <!-- 3a: History Screen -->
+  <div id="screen-history" class="hidden">
+    <button class="back-btn" onclick="goVenueDashboard()">&#x2039; ダッシュボード</button>
     <div class="section">
       <div class="section-inner">
-        <div class="section-title">即決予約</div>
+        <div class="section-title" id="history-screen-title">即決履歴</div>
       </div>
       <div id="history-list"><p class="empty-state">読み込み中</p></div>
     </div>
-    <button class="report-btn" onclick="goReport()">報告を入力</button>
   </div>
 
   <!-- 3: Team List -->
@@ -422,7 +430,7 @@ document.addEventListener('DOMContentLoaded',loadData);
 
 async function loadData(){showLoading('読み込み中');try{var r=await fetch(API_URL+'?action=getVenueReport');var d=await r.json();if(d.error){showError(d.error);return}venueData=d;document.getElementById('today-display').textContent=d.todayDisplay||'';renderVenueList()}catch(e){showError('取得失敗: '+e.message)}finally{hideLoading()}}
 
-function showScreen(id){['screen-venue-select','screen-venue-dashboard','screen-team-list','screen-sokketsu','screen-report','screen-done'].forEach(function(s){document.getElementById(s).classList.toggle('hidden',s!==id)});window.scrollTo(0,0)}
+function showScreen(id){['screen-venue-select','screen-venue-dashboard','screen-team-list','screen-history','screen-sokketsu','screen-report','screen-done'].forEach(function(s){document.getElementById(s).classList.toggle('hidden',s!==id)});window.scrollTo(0,0)}
 function goVenueSelect(){showScreen('screen-venue-select')}
 function goVenueDashboard(){showScreen('screen-venue-dashboard')}
 function goTeamList(){showScreen('screen-team-list')}
@@ -446,11 +454,9 @@ function selectVenue(idx){selectedVenueIndex=idx;selectedVenue=venueData.venues[
 
 function renderVenueDashboard(){var v=selectedVenue;document.getElementById('venue-title').textContent=v.sheetName;var blocks=v.blocks||[];var el=document.getElementById('tournament-list');if(!blocks.length){el.innerHTML='<p class="empty-state">大会なし</p>';return}el.innerHTML=blocks.map(function(b,bi){var tc=(b.teams||[]).length;var mt=b.maxTeams||'';var prizes=b.prizes||[];var pl=['優勝','副賞','GT'];var prizeHtml=prizes.length?'<div style="display:flex;flex-direction:column;gap:2px;margin-top:4px">'+prizes.map(function(p,pi){return'<span style="font-size:11px;color:#af8700">'+pl[pi]+': '+esc(p)+'</span>'}).join('')+'</div>':'';return'<div class="card" onclick="selectTournament('+bi+')"><div class="card-body"><div class="card-name">'+esc(b.tournamentName||'大会')+'</div><div class="card-meta">'+(b.startTime?'<span>('+esc(b.startTime)+')</span>':'')+'<span>'+tc+'チーム'+(mt?'('+esc(mt)+')':'')+'</span>'+(b.level?'<span>'+esc(b.level)+'</span>':'')+'</div>'+prizeHtml+'</div><span class="card-arrow">&#x203A;</span></div>'}).join('')}
 
-function loadHistory(){var el=document.getElementById('history-list');el.innerHTML='<p class="empty-state">読み込み中</p>';var days=0;if(selectedVenue&&selectedVenue.dayCategory==='yesterday')days=1;else if(selectedVenue&&(selectedVenue.dayCategory==='past'))days=7;fetch(API_URL+'?action=getHistory&days='+days).then(function(r){return r.json()}).then(function(d){
-// この会場の大会IDに一致する履歴だけフィルタ
-var tids={};if(selectedVenue&&selectedVenue.blocks){selectedVenue.blocks.forEach(function(b){if(b.tournamentId)tids[b.tournamentId]=true})}
-var all=d.items||[];if(Object.keys(tids).length>0){historyItems=all.filter(function(h){return tids[h.tournamentId]})}else{historyItems=all}
-renderHistory()}).catch(function(){el.innerHTML='<p class="empty-state">取得失敗</p>'})}
+function loadHistory(){var days=0;if(selectedVenue&&selectedVenue.dayCategory==='yesterday')days=1;else if(selectedVenue&&(selectedVenue.dayCategory==='past'))days=7;fetch(API_URL+'?action=getHistory&days='+days).then(function(r){return r.json()}).then(function(d){var tids={};if(selectedVenue&&selectedVenue.blocks){selectedVenue.blocks.forEach(function(b){if(b.tournamentId)tids[b.tournamentId]=true})}var all=d.items||[];if(Object.keys(tids).length>0){historyItems=all.filter(function(h){return tids[h.tournamentId]})}else{historyItems=all}var ce=document.getElementById('history-count-dash');if(ce)ce.textContent=historyItems.length?'('+historyItems.length+'件)':''}).catch(function(){})}
+
+function goHistoryScreen(){document.getElementById('history-screen-title').textContent='即決履歴 - '+((selectedVenue&&selectedVenue.sheetName)||'');var el=document.getElementById('history-list');if(historyItems.length===0){el.innerHTML='<p class="empty-state">この会場の即決履歴はありません</p>'}else{renderHistory()}showScreen('screen-history')}
 
 function renderHistory(){var el=document.getElementById('history-list');if(!historyItems.length){el.innerHTML='<p class="empty-state">なし</p>';return}el.innerHTML=historyItems.map(function(h,i){return'<div class="history-item"><div><div class="hi-time">'+esc(h.time)+'</div><div class="hi-team">'+esc(h.team)+'</div><div class="hi-detail">'+h.slotCount+'枠</div></div><div class="hi-status"><div class="dot '+(h.cwOk?'ok':'ng')+'"></div><div class="dot '+(h.emailOk?'ok':'ng')+'"></div>'+(!h.emailOk?'<button class="resend-btn" id="resend-'+i+'" onclick="resendEmail('+i+')">再送</button>':'')+'</div></div>'}).join('')}
 

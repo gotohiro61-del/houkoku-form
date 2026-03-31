@@ -257,8 +257,8 @@ body{
     <div class="confirm-title">報告内容の確認</div>
     <div id="report-confirm-body"></div>
     <div class="confirm-buttons">
-      <button class="confirm-send-btn" id="report-send-btn" onclick="doSubmitReport()">送信</button>
-      <button class="confirm-back-btn" onclick="closeReportConfirm()">戻る</button>
+      <button class="confirm-send-btn" id="report-send-btn" onclick="doSubmitReport()" style="background:#ff3b30;font-size:18px;padding:16px">この内容で送信する</button>
+      <button class="confirm-back-btn" onclick="closeReportConfirm()">戻って修正する</button>
     </div>
   </div>
 </div>
@@ -429,7 +429,7 @@ body{
       <div class="section-inner"><div class="section-title">最終チェック</div></div>
       <div id="check-items-area"></div>
     </div>
-    <button class="report-btn" onclick="showReportConfirm()">内容を確認</button>
+    <button class="report-btn" onclick="showReportConfirm()" style="background:#007aff">内容を確認 →</button>
   </div>
 
   <!-- 6: Done -->

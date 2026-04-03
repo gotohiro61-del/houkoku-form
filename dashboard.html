@@ -80,11 +80,14 @@ body{
 .pay-badge.unpaid{color:#ff3b30;background:#fef2f2}
 .pay-badge.unknown{color:#aeaeb2;background:#f5f5f7}
 .team-card .sales-tag{font-size:11px;font-weight:600;color:#007aff;background:#eff6ff;padding:1px 6px;border-radius:4px}
+.rc-col-header{display:flex;align-items:center;padding:0 0 0 10px;gap:4px}
+.rc-col-header span{font-size:10px;font-weight:500;color:#aeaeb2;letter-spacing:.05em}
 .team-card .rc-area{display:flex;align-items:center;justify-content:center;width:48px;min-width:48px;border-right:1px solid #e5e5ea;-webkit-tap-highlight-color:transparent}
 .team-card .rc-box{width:26px;height:26px;border-radius:7px;border:2px solid #d2d2d7;background:#fff;display:flex;align-items:center;justify-content:center;transition:all .2s;font-size:16px;color:transparent}
 .team-card.reception-done .rc-box{border-color:#34c759;background:#34c759;color:#fff}
 .team-card .tc-body{flex:1;padding:16px 20px;min-width:0}
-.team-card.reception-done{background:#f0fdf4}
+.team-card.pay-pending{background:#fef2f2}
+.team-card.pay-complete{background:#f0fdf4}
 
 /* ===== Back ===== */
 .back-btn{display:inline-flex;align-items:center;gap:2px;color:#86868b;font-size:15px;font-weight:400;cursor:pointer;padding:12px 0;background:none;border:none}
@@ -497,16 +500,16 @@ async function resendEmail(idx){var h=historyItems[idx];var btn=document.getElem
 
 function selectTournament(bi){selectedBlockIndex=bi;renderTeamList();showScreen('screen-team-list')}
 
-function renderTeamList(){var b=selectedVenue.blocks[selectedBlockIndex];var tc=(b.teams||[]).length;var mt=b.maxTeams||'';var prizes=b.prizes||[];var pl2=['優勝','副賞','GT'];var prizeHtml2=prizes.length?'<div style="display:flex;flex-direction:column;gap:2px;margin-top:4px">'+prizes.map(function(p,pi){return'<span style="font-size:11px;color:#af8700">'+pl2[pi]+': '+esc(p)+'</span>'}).join('')+'</div>':'';document.getElementById('team-list-title').innerHTML=esc(b.tournamentName||'大会')+'<div class="card-meta" style="margin-top:4px;font-weight:400">'+(b.startTime?'<span>('+esc(b.startTime)+')</span>':'')+'<span>'+tc+'チーム'+(mt?'('+esc(mt)+')':'')+'</span>'+(b.level?'<span>'+esc(b.level)+'</span>':'')+'</div>'+prizeHtml2;var el=document.getElementById('team-list');var teams=b.teams||[];if(!teams.length){el.innerHTML='<p class="empty-state">チームなし</p>';return}el.innerHTML=teams.map(function(t,ti){var rd=t.rentalInput||t.rental||'';var repName=t.furigana||t.rep||'-';var visitInfo=(t.rep&&t.rep.match(/初回|リピート/))?t.rep:'';var sokketsu=(t.salesActivity&&t.salesActivity.indexOf('即決')===0)?t.salesActivity:'';var rank=t.rank||'';var rankDisp=rank?(rank.match(/位/)?rank:rank+'位'):'';var tags='';
+function renderTeamList(){var b=selectedVenue.blocks[selectedBlockIndex];var tc=(b.teams||[]).length;var mt=b.maxTeams||'';var prizes=b.prizes||[];var pl2=['優勝','副賞','GT'];var prizeHtml2=prizes.length?'<div style="display:flex;flex-direction:column;gap:2px;margin-top:4px">'+prizes.map(function(p,pi){return'<span style="font-size:11px;color:#af8700">'+pl2[pi]+': '+esc(p)+'</span>'}).join('')+'</div>':'';document.getElementById('team-list-title').innerHTML=esc(b.tournamentName||'大会')+'<div class="card-meta" style="margin-top:4px;font-weight:400">'+(b.startTime?'<span>('+esc(b.startTime)+')</span>':'')+'<span>'+tc+'チーム'+(mt?'('+esc(mt)+')':'')+'</span>'+(b.level?'<span>'+esc(b.level)+'</span>':'')+'</div>'+prizeHtml2;var el=document.getElementById('team-list');var teams=b.teams||[];if(!teams.length){el.innerHTML='<p class="empty-state">チームなし</p>';return}el.innerHTML='<div class="rc-col-header"><span>受付</span></div>'+teams.map(function(t,ti){var rd=t.rentalInput||t.rental||'';var repName=t.furigana||t.rep||'-';var visitInfo=(t.rep&&t.rep.match(/初回|リピート/))?t.rep:'';var sokketsu=(t.salesActivity&&t.salesActivity.indexOf('即決')===0)?t.salesActivity:'';var rank=t.rank||'';var rankDisp=rank?(rank.match(/位/)?rank:rank+'位'):'';var tags='';
 if(visitInfo)tags+='<span class="tag visit">'+esc(visitInfo)+'</span>';
 if(sokketsu)tags+='<span class="tag sokketsu">'+esc(sokketsu)+'</span>';
 if(rankDisp)tags+='<span class="tag rank">'+esc(rankDisp)+'</span>';
 if(rd)tags+='<span class="tag rental">'+esc(rd)+'</span>';
 var isLocalPay=false;var pay=String(t.payment||'');if(pay==='0'||pay==='false'||pay==='FALSE'||pay===''){if(t.price)isLocalPay=true}
 var localPayDone=isLocalPay&&(t.paymentMethod==='端末決済'||t.paymentMethod==='決済済');var localPayBadge=isLocalPay?(localPayDone?'<span class="tag local-pay-done">現地決済済</span>':'<span class="tag local-pay">現地決済</span>'):'';
-var cardBg=isLocalPay?(localPayDone?' style="background:#fff"':' style="background:#fef2f2"'):'';
+var payClass=localPayDone?' pay-complete':(isLocalPay&&!localPayDone?' pay-pending':'');
 var rcClass=t.receptionChecked?' reception-done':'';
-return'<div class="team-card'+rcClass+'"'+cardBg+'>'+
+return'<div class="team-card'+rcClass+payClass+'">'+
 '<div class="rc-area" onclick="event.stopPropagation();toggleReception('+ti+')"><div class="rc-box">\u2713</div></div>'+
 '<div class="tc-body" onclick="openTeamDetail('+ti+')">'+
 '<div class="t-row"><span class="team-name">'+esc(t.teamName)+'</span></div>'+

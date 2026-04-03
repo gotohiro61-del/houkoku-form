@@ -81,9 +81,13 @@ body{
 .pay-badge.unknown{color:#aeaeb2;background:#f5f5f7}
 .team-card .sales-tag{font-size:11px;font-weight:600;color:#007aff;background:#eff6ff;padding:1px 6px;border-radius:4px}
 .team-card.reception-done{background:#f0fdf4}
-.reception-btn{font-size:13px;font-weight:700;padding:6px 14px;border-radius:8px;border:none;background:#007aff;color:#fff;cursor:pointer;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.15);letter-spacing:.02em}
-.reception-btn:active{opacity:.7}
-.reception-btn.checked{background:#34c759;color:#fff;box-shadow:none}
+.reception-sw{display:inline-flex;align-items:center;gap:6px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.reception-sw .sw-label{font-size:11px;font-weight:600;color:#aeaeb2}
+.reception-sw.checked .sw-label{color:#34c759}
+.reception-sw .sw-track{position:relative;width:44px;height:26px;border-radius:13px;background:#e5e5ea;transition:background .25s}
+.reception-sw.checked .sw-track{background:#34c759}
+.reception-sw .sw-thumb{position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:11px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:left .25s}
+.reception-sw.checked .sw-thumb{left:20px}
 
 /* ===== Back ===== */
 .back-btn{display:inline-flex;align-items:center;gap:2px;color:#86868b;font-size:15px;font-weight:400;cursor:pointer;padding:12px 0;background:none;border:none}
@@ -505,7 +509,7 @@ var isLocalPay=false;var pay=String(t.payment||'');if(pay==='0'||pay==='false'||
 var localPayDone=isLocalPay&&(t.paymentMethod==='端末決済'||t.paymentMethod==='決済済');var localPayBadge=isLocalPay?(localPayDone?'<span class="tag local-pay-done">現地決済済</span>':'<span class="tag local-pay">現地決済</span>'):'';
 var cardBg=isLocalPay?(localPayDone?' style="background:#fff"':' style="background:#fef2f2"'):'';
 var rcClass=t.receptionChecked?' reception-done':'';
-var rcBtn='<button class="reception-btn'+(t.receptionChecked?' checked':'')+'" onclick="event.stopPropagation();toggleReception('+ti+')">'+(t.receptionChecked?'\u2713 \u53D7\u4ED8\u6E08':'\u53D7\u4ED8')+'</button>';
+var rcBtn='<div class="reception-sw'+(t.receptionChecked?' checked':'')+'" onclick="event.stopPropagation();toggleReception('+ti+')"><span class="sw-label">'+(t.receptionChecked?'\u53D7\u4ED8\u6E08':'\u53D7\u4ED8')+'</span><div class="sw-track"><div class="sw-thumb"></div></div></div>';
 return'<div class="team-card'+rcClass+'"'+cardBg+' onclick="openTeamDetail('+ti+')">'+
 '<div class="t-row"><span class="team-name">'+esc(t.teamName)+'</span>'+rcBtn+'</div>'+
 '<div class="t-row"><span class="rep-name">'+esc(repName)+'</span></div>'+

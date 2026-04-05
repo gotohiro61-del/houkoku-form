@@ -147,6 +147,20 @@ body{
 .report-btn:active{opacity:.75}
 .report-btn:disabled{opacity:.3}
 
+/* ===== Toast ===== */
+.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);background:#1d1d1f;color:#fff;padding:12px 24px;border-radius:980px;font-size:13px;font-weight:500;opacity:0;transition:all .3s cubic-bezier(.32,.72,0,1);z-index:9000;pointer-events:none;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ===== Sync Button ===== */
+.sync-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 20px 4px}
+.sync-time{font-size:11px;color:#aeaeb2}
+.sync-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;background:#f5f5f7;border:1px solid #e5e5ea;border-radius:980px;font-size:12px;font-weight:600;color:#007aff;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent}
+.sync-btn:active{background:#e5e5ea;transform:scale(.96)}
+.sync-btn.loading{color:#aeaeb2;pointer-events:none}
+.sync-btn .sync-icon{display:inline-block;font-size:13px;transition:transform .4s}
+.sync-btn.loading .sync-icon{animation:syncSpin .8s linear infinite}
+@keyframes syncSpin{to{transform:rotate(360deg)}}
+
 /* ===== Forms ===== */
 .form-group{margin-bottom:16px}
 .form-group label{display:block;font-size:13px;font-weight:500;color:#636366;margin-bottom:6px}
@@ -373,6 +387,10 @@ body{
   <!-- 3: Team List -->
   <div id="screen-team-list" class="hidden">
     <button class="back-btn" onclick="goVenueDashboard()">&#x2039; 大会一覧</button>
+    <div class="sync-bar">
+      <span class="sync-time" id="sync-time"></span>
+      <button class="sync-btn" id="sync-btn" onclick="syncTeamData()"><span class="sync-icon">&#x21bb;</span>最新に更新</button>
+    </div>
     <div class="section">
       <div class="section-inner">
         <div class="section-title" id="team-list-title">-</div>
@@ -380,6 +398,9 @@ body{
       <div id="team-list"></div>
     </div>
   </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
 
   <!-- 4: Sokketsu -->
   <div id="screen-sokketsu" class="hidden">
@@ -405,9 +426,10 @@ body{
       </div>
     </div></div>
     <div class="section"><div class="section-inner">
+      <div style="background:#e8f0fe;border-radius:10px;padding:12px 16px;margin-bottom:16px;text-align:center"><span style="font-size:15px;font-weight:700;color:#1a73e8">&#x1F4C5; 次回予約を入力</span></div>
+      <div class="form-group"><label>入力者名 <span class="req">*</span></label><input type="text" id="sk-staff-name" placeholder="名前"></div>
       <div class="section-title">枠数</div>
       <div class="type-selector" id="sk-type-selector"></div>
-      <div class="form-group"><label>入力者名 <span class="req">*</span></label><input type="text" id="sk-staff-name" placeholder="名前"></div>
       <div id="sk-booking-slots"></div>
     </div></div>
     <div class="grand-total-box" style="background:linear-gradient(135deg,#1a73e8,#0d47a1)">
@@ -521,7 +543,7 @@ function renderHistory(){var el=document.getElementById('history-list');if(!hist
 
 async function resendEmail(idx){var h=historyItems[idx];var btn=document.getElementById('resend-'+idx);if(!h||!btn)return;btn.disabled=true;btn.textContent='...';try{var r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'resendEmail',email:h.email,rep:h.rep,team:h.team,phone:h.phone})});var res=await r.json();if(res.email==='OK'){btn.textContent='完了';btn.style.background='#34c759'}else{btn.textContent='失敗';btn.disabled=false}}catch(e){btn.textContent='失敗';btn.disabled=false}}
 
-function selectTournament(bi){selectedBlockIndex=bi;renderTeamList();showScreen('screen-team-list')}
+function selectTournament(bi){selectedBlockIndex=bi;renderTeamList();updateSyncTime();showScreen('screen-team-list')}
 
 function renderTeamList(){var b=selectedVenue.blocks[selectedBlockIndex];var tc=(b.teams||[]).length;var mt=b.maxTeams||'';var prizes=b.prizes||[];var pl2=['優勝','副賞','GT'];var prizeHtml2=prizes.length?'<div style="display:flex;flex-direction:column;gap:2px;margin-top:4px">'+prizes.map(function(p,pi){return'<span style="font-size:11px;color:#af8700">'+pl2[pi]+': '+esc(p)+'</span>'}).join('')+'</div>':'';document.getElementById('team-list-title').innerHTML=esc(b.tournamentName||'大会')+'<div class="card-meta" style="margin-top:4px;font-weight:400">'+(b.startTime?'<span>('+esc(b.startTime)+')</span>':'')+'<span>'+tc+'チーム'+(mt?'('+esc(mt)+')':'')+'</span>'+(b.level?'<span>'+esc(b.level)+'</span>':'')+'</div>'+prizeHtml2;var el=document.getElementById('team-list');var teams=b.teams||[];if(!teams.length){el.innerHTML='<p class="empty-state">チームなし</p>';return}el.innerHTML='<div class="rc-col-header"><span>受付</span></div>'+teams.map(function(t,ti){var rd=t.rentalInput||t.rental||'';var repName=t.furigana||t.rep||'-';var visitInfo=(t.rep&&t.rep.match(/初回|リピート/))?t.rep:'';var sokketsu=(t.salesActivity&&t.salesActivity.indexOf('即決')===0)?t.salesActivity:'';var rank=t.rank||'';var rankDisp=rank?(rank.match(/位/)?rank:rank+'位'):'';var tags='';
 if(visitInfo)tags+='<span class="tag visit">'+esc(visitInfo)+'</span>';
@@ -545,7 +567,11 @@ function openTeamDetail(ti){selectedTeamIndex=ti;var b=selectedVenue.blocks[sele
 function toggleReception(ti){var b=selectedVenue.blocks[selectedBlockIndex];var t=b.teams[ti];t.receptionChecked=!t.receptionChecked;renderTeamList();saveReception(t)}
 async function saveReception(t){try{await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'submitReport',spreadsheetId:selectedVenue.spreadsheetId,sheetName:selectedVenue.sheetName,teams:[{teamRow:t.teamRow,receptionChecked:t.receptionChecked}],staffList:[],markComplete:false})})}catch(e){}}
 function closeBottomSheet(){document.getElementById('bottom-sheet').classList.remove('show');setTimeout(function(){document.getElementById('bs-overlay').classList.remove('show')},300)}
-function markPaymentDone(){var amt=document.getElementById('bs-remittance').value;if(!amt||parseInt(amt)<=0){alert('決済金額を入力してください');document.getElementById('bs-remittance').focus();return}var b=selectedVenue.blocks[selectedBlockIndex];var t=b.teams[selectedTeamIndex];t.remittance=amt;t.paymentMethod='端末決済';closeBottomSheet();renderTeamList()}
+function markPaymentDone(){var amt=document.getElementById('bs-remittance').value;if(!amt||parseInt(amt)<=0){alert('決済金額を入力してください');document.getElementById('bs-remittance').focus();return}var b=selectedVenue.blocks[selectedBlockIndex];var t=b.teams[selectedTeamIndex];t.remittance=amt;t.paymentMethod='端末決済';closeBottomSheet();renderTeamList();savePayment(t)}
+async function savePayment(t){try{var r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'submitReport',spreadsheetId:selectedVenue.spreadsheetId,sheetName:selectedVenue.sheetName,teams:[{teamRow:t.teamRow,remittance:t.remittance,paymentMethod:t.paymentMethod}],staffList:[],markComplete:false})});var res=await r.json();if(res.error){showToast('保存失敗: '+res.error,'error')}else{showToast('決済情報を保存しました')}}catch(e){showToast('通信エラー','error')}}
+function showToast(msg,type){var el=document.getElementById('toast');el.textContent=msg;el.style.background=type==='error'?'#ff3b30':'#1d1d1f';el.classList.add('show');clearTimeout(window._toastTimer);window._toastTimer=setTimeout(function(){el.classList.remove('show')},2400)}
+function updateSyncTime(){var el=document.getElementById('sync-time');if(el){var d=new Date();el.textContent='更新: '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)}}
+async function syncTeamData(){var btn=document.getElementById('sync-btn');if(!btn||btn.classList.contains('loading'))return;btn.classList.add('loading');try{var r=await fetch(API_URL+'?action=getVenueReportData&t='+Date.now());var d=await r.json();if(d.error){showToast('取得失敗','error');btn.classList.remove('loading');return}var venues=d.venues||[];for(var vi=0;vi<venues.length;vi++){if(venues[vi].spreadsheetId===selectedVenue.spreadsheetId&&venues[vi].sheetName===selectedVenue.sheetName){selectedVenue.blocks=venues[vi].blocks;break}}renderTeamList();updateSyncTime();showToast('最新データに更新しました')}catch(e){showToast('通信エラー','error')}btn.classList.remove('loading')}
 
 function saveLocalAndClose(){var b=selectedVenue.blocks[selectedBlockIndex];var t=b.teams[selectedTeamIndex];t.salesActivity=document.getElementById('bs-sales').value;t.rank=document.getElementById('bs-rank').value;t.remarks=document.getElementById('bs-remarks').value;t.rentalInput=document.getElementById('bs-rental-input').value;t.remittance=document.getElementById('bs-remittance').value;var pm=document.getElementById('bs-payment-method');if(pm)t.paymentMethod=pm.value;closeBottomSheet();renderTeamList()}
 

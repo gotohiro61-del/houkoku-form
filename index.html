@@ -59,6 +59,17 @@ body{
 .card.cancelled .card-name{color:#86868b}
 .card.cancelled .card-meta{color:#c7c7cc}
 .cancelled-mark{position:absolute;top:8px;right:14px;font-size:10px;font-weight:700;color:#ff3b30;background:#fef2f2;border:1px solid #fecaca;padding:1px 6px;border-radius:4px;letter-spacing:.03em}
+
+/* ===== QR Rules ===== */
+.qr-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:12px;background:#fff;border:1px solid #e5e5ea;border-radius:12px;font-size:14px;font-weight:500;color:#1d1d1f;cursor:pointer;margin-bottom:12px;transition:all .15s;-webkit-tap-highlight-color:transparent}
+.qr-btn:active{background:#f5f5f7;transform:scale(.98)}
+.qr-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,.97);z-index:8000;flex-direction:column;align-items:center;justify-content:center;padding:40px}
+.qr-overlay.show{display:flex}
+.qr-close{position:absolute;top:16px;right:16px;width:36px;height:36px;background:#f5f5f7;border:none;border-radius:50%;font-size:16px;color:#636366;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.qr-close:active{background:#e5e5ea}
+.qr-img{width:220px;height:220px;border-radius:16px;box-shadow:0 2px 20px rgba(0,0,0,.08)}
+.qr-label{font-size:20px;font-weight:700;color:#1d1d1f;margin-bottom:24px;letter-spacing:-.02em}
+.qr-sub{font-size:14px;color:#86868b;margin-top:20px;text-align:center;line-height:1.6}
 .meta-badge{font-size:10px;font-weight:600;padding:1px 6px;border-radius:3px;white-space:nowrap}
 .meta-badge.green{color:#fff;background:#34c759}
 .meta-badge.orange{color:#af8700;background:#fefce8}
@@ -319,6 +330,14 @@ body{
 <div class="container">
   <div class="error-banner" id="error-banner"></div>
 
+  <!-- QR Overlay -->
+  <div class="qr-overlay" id="qr-overlay">
+    <button class="qr-close" onclick="closeQR()">&#x2715;</button>
+    <div class="qr-label">大会規約</div>
+    <img class="qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=440x440&data=https%3A%2F%2Fdocs.google.com%2Fforms%2Fd%2Fe%2F1FAIpQLScXPBQ5djijo1XiU1SnZ8kRbsb4vs7VHHRDoRuByOG9uoaG2g%2Fviewform" alt="大会規約QR">
+    <div class="qr-sub">参加者のスマホで<br>読み取ってください</div>
+  </div>
+
   <!-- 1: Venue Select -->
   <div id="screen-venue-select">
     <div class="header" style="display:flex;justify-content:space-between;align-items:flex-start">
@@ -328,6 +347,7 @@ body{
       </div>
       <button onclick="goAdmin()" style="background:none;border:1px solid #d2d2d7;border-radius:8px;padding:6px 12px;font-size:12px;color:#86868b;cursor:pointer;margin-top:4px">管理</button>
     </div>
+    <button class="qr-btn" onclick="openQR()">&#x1F4CB; 大会規約を表示</button>
     <div class="section">
       <div class="section-inner">
         <div class="date-nav">
@@ -573,6 +593,8 @@ async function saveReception(t){try{await fetch(API_URL,{method:'POST',headers:{
 function closeBottomSheet(){document.getElementById('bottom-sheet').classList.remove('show');setTimeout(function(){document.getElementById('bs-overlay').classList.remove('show')},300)}
 function markPaymentDone(){var amt=document.getElementById('bs-remittance').value;if(!amt||parseInt(amt)<=0){alert('決済金額を入力してください');document.getElementById('bs-remittance').focus();return}var b=selectedVenue.blocks[selectedBlockIndex];var t=b.teams[selectedTeamIndex];t.remittance=amt;t.paymentMethod='端末決済';closeBottomSheet();renderTeamList();savePayment(t)}
 async function savePayment(t){try{var r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'submitReport',spreadsheetId:selectedVenue.spreadsheetId,sheetName:selectedVenue.sheetName,teams:[{teamRow:t.teamRow,remittance:t.remittance,paymentMethod:t.paymentMethod}],staffList:[],markComplete:false})});var res=await r.json();if(res.error){showToast('保存失敗: '+res.error,'error')}else{showToast('決済情報を保存しました')}}catch(e){showToast('通信エラー','error')}}
+function openQR(){document.getElementById('qr-overlay').classList.add('show')}
+function closeQR(){document.getElementById('qr-overlay').classList.remove('show')}
 function showToast(msg,type){var el=document.getElementById('toast');el.textContent=msg;el.style.background=type==='error'?'#ff3b30':'#1d1d1f';el.classList.add('show');clearTimeout(window._toastTimer);window._toastTimer=setTimeout(function(){el.classList.remove('show')},2400)}
 function updateSyncTime(){var el=document.getElementById('sync-time');if(el){var d=new Date();el.textContent='更新: '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)}}
 async function syncTeamData(){var btn=document.getElementById('sync-btn');if(!btn||btn.classList.contains('loading'))return;btn.classList.add('loading');try{var r=await fetch(API_URL+'?action=getVenueReport&t='+Date.now());var d=await r.json();if(d.error){showToast('取得失敗','error');btn.classList.remove('loading');return}var venues=d.venues||[];for(var vi=0;vi<venues.length;vi++){if(venues[vi].spreadsheetId===selectedVenue.spreadsheetId&&venues[vi].sheetName===selectedVenue.sheetName){selectedVenue.blocks=venues[vi].blocks;break}}renderTeamList();updateSyncTime();showToast('最新データに更新しました')}catch(e){showToast('通信エラー','error')}btn.classList.remove('loading')}

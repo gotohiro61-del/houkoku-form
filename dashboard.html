@@ -571,7 +571,7 @@ if(sokketsu)tags+='<span class="tag sokketsu">'+esc(sokketsu)+'</span>';
 if(rankDisp)tags+='<span class="tag rank">'+esc(rankDisp)+'</span>';
 if(rd)tags+='<span class="tag rental">'+esc(rd)+'</span>';
 var isLocalPay=false;var pay=String(t.payment||'');if(pay==='0'||pay==='false'||pay==='FALSE'||pay===''){if(t.price)isLocalPay=true}
-var localPayDone=isLocalPay&&(t.paymentMethod==='端末決済'||t.paymentMethod==='決済済');var localPayBadge=isLocalPay?(localPayDone?'<span class="tag local-pay-done">済</span>':'<span class="tag local-pay">未決済</span>'):'';
+var localPayDone=isLocalPay&&(t.paymentMethod==='端末決済'||t.paymentMethod==='決済済');var localPayBadge=isLocalPay?(localPayDone?'<span class="tag local-pay-done">\u2713 決済済</span>':'<span class="tag local-pay">未決済</span>'):'';
 var payClass=localPayDone?' pay-complete':(isLocalPay&&!localPayDone?' pay-pending':'');
 var rcClass=t.receptionStatus==='checked'?' reception-done':(t.receptionStatus==='cancel'?' reception-cancel':'');
 var rcIcon=t.receptionStatus==='checked'?'\u2713':(t.receptionStatus==='cancel'?'\u2715':'');

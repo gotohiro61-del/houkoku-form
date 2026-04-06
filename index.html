@@ -40,9 +40,10 @@ body{
 .section-title{font-size:13px;font-weight:600;color:#86868b;margin-bottom:16px;letter-spacing:.02em}
 
 /* ===== Date Filter ===== */
-.date-nav{display:flex;gap:8px;margin-bottom:16px}
-.date-btn{padding:8px 16px;border:none;border-radius:980px;background:transparent;font-size:13px;font-weight:600;color:#86868b;cursor:pointer;transition:all .2s}
+.date-nav{display:flex;gap:4px;margin-bottom:16px}
+.date-btn{flex:1;padding:10px 4px;border:none;border-radius:10px;background:transparent;font-size:13px;font-weight:600;color:#86868b;cursor:pointer;transition:all .2s;white-space:nowrap;text-align:center}
 .date-btn.active{background:#1d1d1f;color:#fff}
+.date-btn.today-btn.active{background:#007aff;color:#fff}
 .date-btn:first-child.active{background:#ff3b30;color:#fff}
 .date-btn:active{opacity:.7}
 
@@ -368,7 +369,7 @@ body{
         <div class="date-nav">
           <button class="date-btn" onclick="filterVenues('unreported')">未報告</button>
           <button class="date-btn" onclick="filterVenues('yesterday')">前日</button>
-          <button class="date-btn active" onclick="filterVenues('today')" style="background:#007aff;color:#fff;font-size:14px">本日</button>
+          <button class="date-btn active today-btn" onclick="filterVenues('today')">本日</button>
           <button class="date-btn" onclick="filterVenues('tomorrow')">翌日</button>
           <button class="date-btn" onclick="filterVenues('2daysafter')">翌々日</button>
         </div>
@@ -550,7 +551,7 @@ function goVenueSelect(){showScreen('screen-venue-select')}
 function goVenueDashboard(){showScreen('screen-venue-dashboard')}
 function goTeamList(){showScreen('screen-team-list')}
 
-function filterVenues(f){currentFilter=f;var btns=document.querySelectorAll('.date-btn');var labels=['unreported','yesterday','today','tomorrow','2daysafter'];btns.forEach(function(b,i){if(labels[i]===f){b.classList.add('active');if(labels[i]==='today'){b.style.background='#007aff';b.style.color='#fff'}else{b.style.background='';b.style.color=''}}else{b.classList.remove('active');if(labels[i]==='today'){b.style.background='';b.style.color=''}}});if(f==='unreported')loadUnreportedVenues();else renderVenueList()}
+function filterVenues(f){currentFilter=f;var btns=document.querySelectorAll('.date-btn');var labels=['unreported','yesterday','today','tomorrow','2daysafter'];btns.forEach(function(b,i){b.classList.toggle('active',labels[i]===f)});if(f==='unreported')loadUnreportedVenues();else renderVenueList()}
 
 function renderVenueList(){var el=document.getElementById('venue-list');var venues=(venueData&&venueData.venues)||[];var filtered=venues.filter(function(v){if(currentFilter==='yesterday')return v.dayCategory==='yesterday';if(currentFilter==='tomorrow')return v.dayCategory==='tomorrow';if(currentFilter==='2daysafter')return v.dayCategory==='2daysafter';return v.dayCategory==='today'});if(!filtered.length){el.innerHTML='<p class="empty-state">会場はありません</p>';return}el.innerHTML=filtered.map(function(v){var ri=venues.indexOf(v);var bc=v.blockCount||(v.blocks||[]).length;return'<div class="card'+(v.completed?' done':'')+'" onclick="selectVenue('+ri+')"><div class="card-body"><div class="card-name">'+esc(v.sheetName.replace(/^\d+日\s*/,''))+'</div><div class="card-meta"><span>'+bc+'大会</span>'+(v.completed?'<span class="meta-badge green">報告済</span>':'')+'</div></div><span class="card-arrow">&#x203A;</span></div>'}).join('')}
 

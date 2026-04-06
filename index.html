@@ -367,10 +367,10 @@ body{
       <div class="section-inner">
         <div class="date-nav">
           <button class="date-btn" onclick="filterVenues('unreported')">未報告</button>
-          <button class="date-btn" onclick="filterVenues('2daysago')">前々日</button>
           <button class="date-btn" onclick="filterVenues('yesterday')">前日</button>
-          <button class="date-btn active" onclick="filterVenues('today')">本日</button>
+          <button class="date-btn active" onclick="filterVenues('today')" style="background:#007aff;color:#fff;font-size:14px">本日</button>
           <button class="date-btn" onclick="filterVenues('tomorrow')">翌日</button>
+          <button class="date-btn" onclick="filterVenues('2daysafter')">翌々日</button>
         </div>
       </div>
       <div id="venue-list"><p class="empty-state">読み込み中</p></div>
@@ -550,9 +550,9 @@ function goVenueSelect(){showScreen('screen-venue-select')}
 function goVenueDashboard(){showScreen('screen-venue-dashboard')}
 function goTeamList(){showScreen('screen-team-list')}
 
-function filterVenues(f){currentFilter=f;var btns=document.querySelectorAll('.date-btn');var labels=['unreported','2daysago','yesterday','today','tomorrow'];btns.forEach(function(b,i){b.classList.toggle('active',labels[i]===f)});if(f==='unreported')loadUnreportedVenues();else renderVenueList()}
+function filterVenues(f){currentFilter=f;var btns=document.querySelectorAll('.date-btn');var labels=['unreported','yesterday','today','tomorrow','2daysafter'];btns.forEach(function(b,i){if(labels[i]===f){b.classList.add('active');if(labels[i]==='today'){b.style.background='#007aff';b.style.color='#fff'}else{b.style.background='';b.style.color=''}}else{b.classList.remove('active');if(labels[i]==='today'){b.style.background='';b.style.color=''}}});if(f==='unreported')loadUnreportedVenues();else renderVenueList()}
 
-function renderVenueList(){var el=document.getElementById('venue-list');var venues=(venueData&&venueData.venues)||[];var filtered=venues.filter(function(v){if(currentFilter==='2daysago')return v.dayCategory==='2daysago';if(currentFilter==='yesterday')return v.dayCategory==='yesterday';if(currentFilter==='tomorrow')return v.dayCategory==='tomorrow';return v.dayCategory==='today'});if(!filtered.length){el.innerHTML='<p class="empty-state">会場はありません</p>';return}el.innerHTML=filtered.map(function(v){var ri=venues.indexOf(v);var bc=v.blockCount||(v.blocks||[]).length;return'<div class="card'+(v.completed?' done':'')+'" onclick="selectVenue('+ri+')"><div class="card-body"><div class="card-name">'+esc(v.sheetName.replace(/^\d+日\s*/,''))+'</div><div class="card-meta"><span>'+bc+'大会</span>'+(v.completed?'<span class="meta-badge green">報告済</span>':'')+'</div></div><span class="card-arrow">&#x203A;</span></div>'}).join('')}
+function renderVenueList(){var el=document.getElementById('venue-list');var venues=(venueData&&venueData.venues)||[];var filtered=venues.filter(function(v){if(currentFilter==='yesterday')return v.dayCategory==='yesterday';if(currentFilter==='tomorrow')return v.dayCategory==='tomorrow';if(currentFilter==='2daysafter')return v.dayCategory==='2daysafter';return v.dayCategory==='today'});if(!filtered.length){el.innerHTML='<p class="empty-state">会場はありません</p>';return}el.innerHTML=filtered.map(function(v){var ri=venues.indexOf(v);var bc=v.blockCount||(v.blocks||[]).length;return'<div class="card'+(v.completed?' done':'')+'" onclick="selectVenue('+ri+')"><div class="card-body"><div class="card-name">'+esc(v.sheetName.replace(/^\d+日\s*/,''))+'</div><div class="card-meta"><span>'+bc+'大会</span>'+(v.completed?'<span class="meta-badge green">報告済</span>':'')+'</div></div><span class="card-arrow">&#x203A;</span></div>'}).join('')}
 
 function loadUnreportedVenues(){var el=document.getElementById('venue-list');el.innerHTML='<p class="empty-state">取得中...</p>';fetch(API_URL+'?action=getUnreported').then(function(r){return r.json()}).then(function(d){if(d.error){el.innerHTML='<p class="empty-state">'+esc(d.error)+'</p>';return}var list=d.unreported||[];if(!list.length){el.innerHTML='<p class="empty-state">未報告なし</p>';return}el.innerHTML=list.map(function(v){return'<div class="card" onclick="loadAndSelectVenue(\''+esc(v.spreadsheetId)+'\',\''+esc(v.sheetName)+'\')"><div class="card-body"><div class="card-name" style="color:#ff3b30">'+esc(v.sheetName.replace(/^\d+日\s*/,''))+'</div><div class="card-meta"><span>'+esc(v.dateStr)+'</span><span>'+v.blockCount+'大会</span><span class="meta-badge" style="color:#fff;background:#ff3b30">未報告</span></div></div><span class="card-arrow">&#x203A;</span></div>'}).join('')}).catch(function(e){el.innerHTML='<p class="empty-state">エラー</p>'})}
 

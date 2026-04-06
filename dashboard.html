@@ -44,8 +44,8 @@ body{
 .section-title{font-size:13px;font-weight:600;color:#86868b;margin-bottom:16px;letter-spacing:.02em}
 
 /* ===== Date Filter ===== */
-.date-nav{display:flex;gap:4px;margin-bottom:16px}
-.date-btn{flex:1;padding:10px 4px;border:none;border-radius:10px;background:transparent;font-size:13px;font-weight:600;color:#86868b;cursor:pointer;transition:all .2s;white-space:nowrap;text-align:center}
+.date-nav{display:flex;gap:6px;margin-bottom:16px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.date-btn{padding:8px 14px;border:none;border-radius:980px;background:transparent;font-size:13px;font-weight:600;color:#86868b;cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0}
 .date-btn.active{background:#1d1d1f;color:#fff}
 .date-btn.today-btn.active{background:#007aff;color:#fff}
 .date-btn:first-child.active{background:#ff3b30;color:#fff}

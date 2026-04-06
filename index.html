@@ -104,11 +104,11 @@ body{
 .team-card .rc-box{width:26px;height:26px;border-radius:7px;border:2px solid #d2d2d7;background:#fff;display:flex;align-items:center;justify-content:center;transition:all .2s;font-size:16px;color:transparent}
 .team-card.reception-done .rc-area{background:#f0fdf4}
 .team-card.reception-done .rc-box{border-color:#34c759;background:#34c759;color:#fff}
-.team-card.reception-cancel .rc-area{background:#fef2f2}
-.team-card.reception-cancel .rc-box{border-color:#ff3b30;background:#ff3b30;color:#fff}
+.team-card.reception-cancel .rc-area{background:#f5f5f7}
+.team-card.reception-cancel .rc-box{border-color:#aeaeb2;background:#aeaeb2;color:#fff}
 .team-card .tc-body{flex:1;padding:16px 20px;min-width:0}
 .team-card.reception-done .tc-body{background:#f0fdf4}
-.team-card.reception-cancel .tc-body{background:#fef2f2;opacity:.6}
+.team-card.reception-cancel .tc-body{background:#f5f5f7;opacity:.5}
 .team-card.pay-pending .tc-body{background:#fef2f2}
 .team-card.pay-complete .tc-body{background:#f0fdf4}
 
@@ -572,9 +572,9 @@ var st={checked:0,cancel:0,unset:0,payWait:0,payDone:0};(b.teams||[]).forEach(fu
 var hasPayWait=st.payWait>0;var cardBg=hasPayWait?' style="background:#fef2f2"':'';
 var statsHtml='<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">';
 if(st.checked)statsHtml+='<span style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;color:#34c759;background:#f0fdf4">受付 '+st.checked+'</span>';
-if(st.cancel)statsHtml+='<span style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;color:#ff3b30;background:#fef2f2">キャンセル '+st.cancel+'</span>';
+if(st.cancel)statsHtml+='<span style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;color:#86868b;background:#f5f5f7">不参加 '+st.cancel+'</span>';
 if(st.unset)statsHtml+='<span style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;color:#86868b;background:#f5f5f7">未登録 '+st.unset+'</span>';
-if(st.payWait)statsHtml+='<span style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;color:#fff;background:#ff3b30">決済待 '+st.payWait+'</span>';
+if(st.payWait)statsHtml+='<span style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;color:#fff;background:#ff3b30">未決済 '+st.payWait+'</span>';
 if(st.payDone)statsHtml+='<span style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;color:#34c759;background:#f0fdf4">決済済 '+st.payDone+'</span>';
 statsHtml+='</div>';
 var cClass='card'+(b.cancelled?' cancelled':'');return'<div class="'+cClass+'"'+cardBg+' onclick="selectTournament('+bi+')"><div class="card-body"><div class="card-name">'+esc(b.tournamentName||'大会')+'</div><div class="card-meta">'+(b.startTime?'<span>('+esc(b.startTime)+')</span>':'')+'<span>'+tc+'チーム'+(mt?'('+esc(mt)+')':'')+'</span>'+(b.level?'<span>'+esc(b.level)+'</span>':'')+'</div>'+prizeHtml+statsHtml+'</div>'+(b.cancelled?'<span class="cancelled-mark">中止</span>':'')+'<span class="card-arrow">&#x203A;</span></div>'}).join('');updateReportButton()}
@@ -609,7 +609,7 @@ if(sokketsu)tags+='<span class="tag sokketsu">'+esc(sokketsu)+'</span>';
 if(rankDisp)tags+='<span class="tag rank">'+esc(rankDisp)+'</span>';
 if(rd)tags+='<span class="tag rental">'+esc(rd)+'</span>';
 var isLocalPay=false;var pay=String(t.payment||'');if(pay==='0'||pay==='false'||pay==='FALSE'||pay===''){if(t.price)isLocalPay=true}
-var localPayDone=isLocalPay&&(t.paymentMethod==='端末決済'||t.paymentMethod==='決済済');var localPayBadge=isLocalPay?(localPayDone?'<span class="tag local-pay-done">現地決済済</span>':'<span class="tag local-pay">現地決済</span>'):'';
+var localPayDone=isLocalPay&&(t.paymentMethod==='端末決済'||t.paymentMethod==='決済済');var localPayBadge=isLocalPay?(localPayDone?'<span class="tag local-pay-done">済</span>':'<span class="tag local-pay">未決済</span>'):'';
 var payClass=localPayDone?' pay-complete':(isLocalPay&&!localPayDone?' pay-pending':'');
 var rcClass=t.receptionStatus==='checked'?' reception-done':(t.receptionStatus==='cancel'?' reception-cancel':'');
 var rcIcon=t.receptionStatus==='checked'?'\u2713':(t.receptionStatus==='cancel'?'\u2715':'');

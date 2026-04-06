@@ -102,13 +102,25 @@ body{
 .back-btn{display:inline-flex;align-items:center;gap:2px;color:#86868b;font-size:15px;font-weight:400;cursor:pointer;padding:12px 0;background:none;border:none}
 .back-btn:active{opacity:.5}
 
-/* ===== History ===== */
-.history-item{padding:12px 20px;display:flex;justify-content:space-between;align-items:center}
-.history-item+.history-item{border-top:.5px solid rgba(0,0,0,.06)}
-.hi-time{font-size:11px;color:#aeaeb2}
-.hi-team{font-size:15px;font-weight:600}
-.hi-detail{font-size:13px;color:#aeaeb2}
-.hi-status{display:flex;gap:4px;align-items:center}
+/* ===== History (送信履歴スタイル) ===== */
+.history-header{background:linear-gradient(135deg,#2563eb,#1e40af);color:#fff;border-radius:12px;padding:24px;text-align:center;margin-bottom:12px}
+.history-header h2{font-size:18px;font-weight:700;margin-bottom:4px}
+.history-header .count-badge{display:inline-block;background:rgba(255,255,255,.25);color:#fff;font-size:13px;padding:2px 12px;border-radius:980px;font-weight:600}
+.history-filter{display:flex;gap:8px;margin-bottom:16px}
+.history-filter button{flex:1;padding:10px;border-radius:980px;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
+.history-filter button.inactive{background:#fff;color:#1d1d1f;border:1.5px solid #d2d2d7}
+.history-filter button.active{background:#fff;color:#2563eb;border:1.5px solid #2563eb}
+.history-date-label{font-size:14px;font-weight:700;color:#2563eb;padding:8px 0}
+.history-card{background:#fff;border-radius:12px;padding:20px;margin-bottom:10px;box-shadow:0 0 0 .5px rgba(0,0,0,.06),0 1px 3px rgba(0,0,0,.04)}
+.history-card .hc-time{font-size:12px;color:#86868b;margin-bottom:4px}
+.history-card .hc-title{font-size:17px;font-weight:700;margin-bottom:2px}
+.history-card .hc-sub{font-size:13px;color:#86868b;margin-bottom:10px}
+.history-card .hc-status{font-size:14px;font-weight:600;padding:4px 0}
+.history-card .hc-status.ok{color:#34c759}
+.history-card .hc-status.ng{color:#ff3b30}
+.history-card .hc-resend{width:100%;padding:12px;background:#2563eb;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;margin-top:8px}
+.history-card .hc-resend:disabled{opacity:.5}
+.history-card .hc-note{font-size:12px;color:#aeaeb2;text-align:center;margin-top:6px}
 .dot{width:7px;height:7px;border-radius:50%}
 .dot.ok{background:#34c759}
 .dot.ng{background:#ff3b30}
@@ -357,15 +369,18 @@ body{
     </div>
   </div>
 
-  <!-- 3a: History Screen (会場別) -->
+  <!-- 3a: History Screen (送信履歴スタイル) -->
   <div id="screen-history" class="hidden">
     <button class="back-btn" onclick="goVenueDashboard()">&#x2039; ダッシュボード</button>
-    <div class="section">
-      <div class="section-inner">
-        <div class="section-title" id="history-screen-title">即決履歴</div>
-      </div>
-      <div id="history-list"><p class="empty-state">読み込み中</p></div>
+    <div class="history-header">
+      <h2>送信履歴</h2>
+      <span class="count-badge" id="history-count-header">0件</span>
     </div>
+    <div class="history-filter">
+      <button id="filter-today" class="active" onclick="filterHistory('today')">本日</button>
+      <button id="filter-3days" class="inactive" onclick="filterHistory('3days')">3日間</button>
+    </div>
+    <div id="history-list"><p class="empty-state">読み込み中</p></div>
   </div>
 
   <!-- 3b: Admin Screen -->
@@ -486,7 +501,7 @@ body{
 <script>
 const API_URL='https://script.google.com/macros/s/AKfycbzejwlaQBa4v1sWbDhWhiSHDt3ydAhyydu_3sLqFTVYaP2PY3de4fVxCfA1JNVgYOSX/exec';
 const LS_STAFF='dashboard_staff',LS_SK_STAFF='sokketsu_staff';
-let venueData=null,selectedVenue=null,selectedVenueIndex=-1,selectedBlockIndex=-1,selectedTeamIndex=-1,currentFilter='today',isSending=false,skSlotCount=1,historyItems=[];
+let venueData=null,selectedVenue=null,selectedVenueIndex=-1,selectedBlockIndex=-1,selectedTeamIndex=-1,currentFilter='today',currentHistoryFilter='today',isSending=false,skSlotCount=1,historyItems=[];
 
 document.addEventListener('DOMContentLoaded',loadData);
 
@@ -518,14 +533,17 @@ function renderVenueDashboard(){var v=selectedVenue;document.getElementById('ven
 
 function loadHistory(){historyItems=[];var ce=document.getElementById('history-count-dash');if(ce)ce.textContent='';var days=0;if(selectedVenue&&selectedVenue.dayCategory==='yesterday')days=1;else if(selectedVenue&&(selectedVenue.dayCategory==='past'))days=7;fetch(API_URL+'?action=getHistory&days='+days).then(function(r){return r.json()}).then(function(d){var tids={};if(selectedVenue&&selectedVenue.blocks){selectedVenue.blocks.forEach(function(b){if(b.tournamentId)tids[b.tournamentId]=true})}var all=d.items||[];if(Object.keys(tids).length>0){historyItems=all.filter(function(h){return tids[h.tournamentId]})}else{historyItems=all}if(ce)ce.textContent=historyItems.length?'('+historyItems.length+'件)':''}).catch(function(){})}
 
-function goHistoryScreen(){document.getElementById('history-screen-title').textContent='即決履歴';showScreen('screen-history');
-var el=document.getElementById('history-list');el.innerHTML='<p class="empty-state">読み込み中...</p>';var days=0;if(selectedVenue&&selectedVenue.dayCategory==='yesterday')days=1;else if(selectedVenue&&(selectedVenue.dayCategory==='past'))days=7;fetch(API_URL+'?action=getHistory&days='+days).then(function(r){return r.json()}).then(function(d){var tids={};if(selectedVenue&&selectedVenue.blocks){selectedVenue.blocks.forEach(function(b){if(b.tournamentId)tids[b.tournamentId]=true})}var all=d.items||[];historyItems=Object.keys(tids).length>0?all.filter(function(h){return tids[h.tournamentId]}):all;if(historyItems.length===0){el.innerHTML='<p class="empty-state">この会場の即決履歴はありません</p>'}else{renderHistory()}}).catch(function(e){el.innerHTML='<p class="empty-state">取得失敗: '+(e.message||'')+'</p>'})}
+function goHistoryScreen(){showScreen('screen-history');currentHistoryFilter='today';document.getElementById('filter-today').className='active';document.getElementById('filter-3days').className='inactive';fetchAndRenderHistory(0)}
+
+function filterHistory(mode){if(mode==='3days'){currentHistoryFilter='3days';document.getElementById('filter-today').className='inactive';document.getElementById('filter-3days').className='active';fetchAndRenderHistory(3)}else{currentHistoryFilter='today';document.getElementById('filter-today').className='active';document.getElementById('filter-3days').className='inactive';fetchAndRenderHistory(0)}}
+
+function fetchAndRenderHistory(days){var el=document.getElementById('history-list');el.innerHTML='<p class="empty-state">読み込み中...</p>';fetch(API_URL+'?action=getHistory&days='+days).then(function(r){return r.json()}).then(function(d){var tids={};if(selectedVenue&&selectedVenue.blocks){selectedVenue.blocks.forEach(function(b){if(b.tournamentId)tids[b.tournamentId]=true})}var all=d.items||[];historyItems=Object.keys(tids).length>0?all.filter(function(h){return tids[h.tournamentId]}):all;document.getElementById('history-count-header').textContent=historyItems.length+'件';if(historyItems.length===0){el.innerHTML='<p class="empty-state">まだ送信履歴がありません</p>'}else{renderHistory()}}).catch(function(e){el.innerHTML='<p class="empty-state">取得失敗: '+(e.message||'')+'</p>'})}
 
 function goAdmin(){showScreen('screen-admin');var el=document.getElementById('admin-history-list');el.innerHTML='<p class="empty-state">読み込み中...</p>';fetch(API_URL+'?action=getHistory&days=3').then(function(r){return r.json()}).then(function(d){var items=d.items||[];if(!items.length){el.innerHTML='<p class="empty-state">3日間の即決履歴はありません</p>';return}var html='';var lastDate='';items.forEach(function(h,i){if(h.date&&h.date!==lastDate){lastDate=h.date;html+='<div style="font-size:13px;font-weight:600;color:#1d1d1f;padding:12px 20px 6px">'+h.date+'</div>'}html+='<div class="history-item"><div><div class="hi-time">'+esc(h.time)+'</div><div class="hi-team">'+esc(h.team)+'</div><div class="hi-detail">'+h.slotCount+'枠 '+esc(h.venue||'')+'</div></div><div class="hi-status"><div class="dot '+(h.cwOk?'ok':'ng')+'"></div><div class="dot '+(h.emailOk?'ok':'ng')+'"></div>'+(!h.emailOk?'<button class="resend-btn" id="adm-resend-'+i+'" onclick="adminResend('+i+')">再送</button>':'')+'</div></div>'});el.innerHTML=html;window._adminItems=items}).catch(function(){el.innerHTML='<p class="empty-state">取得失敗</p>'})}
 
 async function adminResend(idx){var items=window._adminItems||[];var h=items[idx];var btn=document.getElementById('adm-resend-'+idx);if(!h||!btn)return;btn.disabled=true;btn.textContent='...';try{var r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'resendEmail',email:h.email,rep:h.rep,team:h.team,phone:h.phone})});var res=await r.json();if(res.email==='OK'){btn.textContent='完了';btn.style.background='#34c759'}else{btn.textContent='失敗';btn.disabled=false}}catch(e){btn.textContent='失敗';btn.disabled=false}}
 
-function renderHistory(){var el=document.getElementById('history-list');if(!historyItems.length){el.innerHTML='<p class="empty-state">なし</p>';return}el.innerHTML=historyItems.map(function(h,i){return'<div class="history-item"><div><div class="hi-time">'+esc(h.time)+'</div><div class="hi-team">'+esc(h.team)+'</div><div class="hi-detail">'+h.slotCount+'枠</div></div><div class="hi-status"><div class="dot '+(h.cwOk?'ok':'ng')+'"></div><div class="dot '+(h.emailOk?'ok':'ng')+'"></div>'+(!h.emailOk?'<button class="resend-btn" id="resend-'+i+'" onclick="resendEmail('+i+')">再送</button>':'')+'</div></div>'}).join('')}
+function renderHistory(){var el=document.getElementById('history-list');if(!historyItems.length){el.innerHTML='<p class="empty-state">まだ送信履歴がありません</p>';return}var html='';var lastDate='';historyItems.forEach(function(h,i){if(h.date&&h.date!==lastDate){lastDate=h.date;html+='<div class="history-date-label">'+h.date+'</div>'}html+='<div class="history-card">';html+='<div class="hc-time">'+esc(h.time)+' 送信</div>';html+='<div class="hc-title">'+esc(h.rep||'')+'様 / '+esc(h.team)+'</div>';html+='<div class="hc-sub">'+h.slotCount+'枠 / '+esc(h.email||'')+'</div>';html+='<div class="hc-status '+(h.cwOk?'ok':'ng')+'">'+(h.cwOk?'✓ 予約登録OK':'✗ 予約登録エラー')+'</div>';html+='<div class="hc-status '+(h.emailOk?'ok':'ng')+'">'+(h.emailOk?'✓ メール送信OK':'✗ メール送信エラー')+'</div>';if(!h.emailOk){html+='<button class="hc-resend" id="resend-'+i+'" onclick="resendEmail('+i+')">お客様に届いてない場合：メールを再送</button>';html+='<div class="hc-note">※ 予約の二重登録にはなりません</div>'}html+='</div>'});el.innerHTML=html}
 
 async function resendEmail(idx){var h=historyItems[idx];var btn=document.getElementById('resend-'+idx);if(!h||!btn)return;btn.disabled=true;btn.textContent='...';try{var r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'resendEmail',email:h.email,rep:h.rep,team:h.team,phone:h.phone})});var res=await r.json();if(res.email==='OK'){btn.textContent='完了';btn.style.background='#34c759'}else{btn.textContent='失敗';btn.disabled=false}}catch(e){btn.textContent='失敗';btn.disabled=false}}
 

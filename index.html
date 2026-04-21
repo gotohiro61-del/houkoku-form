@@ -490,6 +490,13 @@ body{
   <!-- 5: Report -->
   <div id="screen-report" class="hidden">
     <button class="back-btn" onclick="goVenueDashboard()">&#x2039; ダッシュボード</button>
+    <div id="draft-banner" class="hidden" style="background:#fff3cd;border:1px solid #ffeeba;color:#856404;padding:12px 16px;border-radius:10px;margin-bottom:14px;display:none">
+      <div style="font-size:14px;margin-bottom:8px"><span id="draft-banner-msg"></span></div>
+      <div style="display:flex;gap:8px">
+        <button onclick="_applyDraft()" style="flex:1;padding:8px;background:#ffc107;color:#000;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">下書きを使う</button>
+        <button onclick="_discardDraft()" style="flex:1;padding:8px;background:#f8f9fa;color:#495057;border:1px solid #dee2e6;border-radius:6px;font-size:13px;cursor:pointer">破棄する</button>
+      </div>
+    </div>
     <div class="section"><div class="section-inner">
       <div class="section-title">報告者</div>
       <div class="form-group" style="margin:0"><label>名前 <span class="req">*</span></label><input type="text" id="report-staff-name" placeholder="名前"></div>
@@ -553,16 +560,23 @@ body{
 <script>
 const API_URL='https://script.google.com/macros/s/AKfycbzejwlaQBa4v1sWbDhWhiSHDt3ydAhyydu_3sLqFTVYaP2PY3de4fVxCfA1JNVgYOSX/exec';
 const LS_STAFF='dashboard_staff',LS_SK_STAFF='sokketsu_staff';
-let venueData=null,selectedVenue=null,selectedVenueIndex=-1,selectedBlockIndex=-1,selectedTeamIndex=-1,currentFilter='today',currentHistoryFilter='today',isSending=false,skSlotCount=1,historyItems=[];
+let venueData=null,selectedVenue=null,selectedVenueIndex=-1,selectedBlockIndex=-1,selectedTeamIndex=-1,currentFilter='today',currentHistoryFilter='today',isSending=false,skSlotCount=1,historyItems=[],_reportBuildKey=null;
 
 document.addEventListener('DOMContentLoaded',loadData);
 
 function migrateReceptionFields(data){(data.venues||[]).forEach(function(v){(v.blocks||[]).forEach(function(b){(b.teams||[]).forEach(function(t){if(t.receptionStatus===undefined){if(t.receptionChecked===true||t.receptionChecked==='TRUE')t.receptionStatus='checked';else t.receptionStatus=''}})})})}
-async function loadData(){showLoading('読み込み中');try{var r=await fetch(API_URL+'?action=getVenueReport');var d=await r.json();if(d.error){showError(d.error);return}migrateReceptionFields(d);venueData=d;document.getElementById('today-display').textContent=d.todayDisplay||'';renderVenueList()}catch(e){showError('取得失敗: '+e.message)}finally{hideLoading()}loadClosingList()}
+async function loadData(){_reportBuildKey=null;showLoading('読み込み中');try{var r=await fetch(API_URL+'?action=getVenueReport');var d=await r.json();if(d.error){showError(d.error);return}migrateReceptionFields(d);venueData=d;document.getElementById('today-display').textContent=d.todayDisplay||'';renderVenueList()}catch(e){showError('取得失敗: '+e.message)}finally{hideLoading()}loadClosingList()}
 async function loadClosingList(){try{var r=await fetch(API_URL+'?action=getClosingList');var d=await r.json();var closings=(d&&d.closings)||[];if(!closings.length)return;var html='';closings.forEach(function(c,idx){if(idx>0)html+='<div style="border-top:1px solid #ffcdd2;margin:6px 0 0;"></div>';html+='<div style="padding:6px 0;">';html+='<div style="display:flex;justify-content:space-between;align-items:baseline;"><span style="font-size:13px;color:#555;">'+esc(c.bookingDate||'')+' &nbsp; '+esc(c.bookingTime||'')+' &nbsp; '+esc(c.bookingLevel||'')+'</span><span style="font-size:11px;color:#aaa;white-space:nowrap;">'+esc(c.closedByStaff||'')+' '+esc(c.closedDate||'')+' '+esc(c.closedAt||'')+'</span></div>';html+='<div style="font-size:15px;font-weight:700;color:#1d1d1f;">'+esc(c.bookingVenue||'')+'</div>';html+='</div>'});document.getElementById('closingItemsSk').innerHTML=html;document.getElementById('closingListSk').style.display='block'}catch(e){}}
 
-function showScreen(id){['screen-venue-select','screen-venue-dashboard','screen-team-list','screen-history','screen-admin','screen-sokketsu','screen-report','screen-done'].forEach(function(s){document.getElementById(s).classList.toggle('hidden',s!==id)});window.scrollTo(0,0)}
-function goVenueSelect(){showScreen('screen-venue-select')}
+function showScreen(id){
+  // 報告画面から離脱するときは pending 保存を即時確定
+  var prev=document.getElementById('screen-report');
+  if(prev&&!prev.classList.contains('hidden')&&id!=='screen-report'){
+    if(typeof _saveReportLocalStorage==='function'){clearTimeout(_reportSaveTimer);_saveReportLocalStorage()}
+  }
+  ['screen-venue-select','screen-venue-dashboard','screen-team-list','screen-history','screen-admin','screen-sokketsu','screen-report','screen-done'].forEach(function(s){document.getElementById(s).classList.toggle('hidden',s!==id)});window.scrollTo(0,0)
+}
+function goVenueSelect(){_reportBuildKey=null;_suppressReportSave=true;showScreen('screen-venue-select');_suppressReportSave=false}
 function goVenueDashboard(){showScreen('screen-venue-dashboard')}
 function goTeamList(){showScreen('screen-team-list')}
 
@@ -572,16 +586,16 @@ function renderVenueList(){var el=document.getElementById('venue-list');var venu
 
 function loadUnreportedVenues(){var el=document.getElementById('venue-list');el.innerHTML='<p class="empty-state">取得中...</p>';fetch(API_URL+'?action=getUnreported').then(function(r){return r.json()}).then(function(d){if(d.error){el.innerHTML='<p class="empty-state">'+esc(d.error)+'</p>';return}var list=d.unreported||[];if(!list.length){el.innerHTML='<p class="empty-state">未報告なし</p>';return}el.innerHTML=list.map(function(v){return'<div class="card" onclick="loadAndSelectVenue(\''+esc(v.spreadsheetId)+'\',\''+esc(v.sheetName)+'\')"><div class="card-body"><div class="card-name" style="color:#ff3b30">'+esc(v.sheetName.replace(/^\d+日\s*/,''))+'</div><div class="card-meta"><span>'+esc(v.dateStr)+'</span><span>'+v.blockCount+'大会</span><span class="meta-badge" style="color:#fff;background:#ff3b30">未報告</span></div></div><span class="card-arrow">&#x203A;</span></div>'}).join('')}).catch(function(e){el.innerHTML='<p class="empty-state">エラー</p>'})}
 
-function loadAndSelectVenue(ssId,sn){var venues=(venueData&&venueData.venues)||[];
+function loadAndSelectVenue(ssId,sn){_reportBuildKey=null;_suppressReportSave=true;var venues=(venueData&&venueData.venues)||[];
 // 既にblocks付きで読み込み済みならそのまま遷移
-for(var i=0;i<venues.length;i++){if(venues[i].spreadsheetId===ssId&&venues[i].sheetName===sn&&venues[i].blocks){selectedVenueIndex=i;selectedVenue=venues[i];renderVenueDashboard();loadHistory();showScreen('screen-venue-dashboard');return}}
-showLoading('読み込み中');fetch(API_URL+'?action=getVenueBySheet&ssId='+encodeURIComponent(ssId)+'&sheetName='+encodeURIComponent(sn)).then(function(r){return r.json()}).then(function(d){hideLoading();if(d.error){showError(d.error);return}if(!venueData)venueData={venues:[]};if(!venueData.venues)venueData.venues=[];if(d.memberList)venueData.memberList=d.memberList;
+for(var i=0;i<venues.length;i++){if(venues[i].spreadsheetId===ssId&&venues[i].sheetName===sn&&venues[i].blocks){selectedVenueIndex=i;selectedVenue=venues[i];renderVenueDashboard();loadHistory();showScreen('screen-venue-dashboard');_suppressReportSave=false;return}}
+showLoading('読み込み中');fetch(API_URL+'?action=getVenueBySheet&ssId='+encodeURIComponent(ssId)+'&sheetName='+encodeURIComponent(sn)).then(function(r){return r.json()}).then(function(d){hideLoading();if(d.error){_suppressReportSave=false;showError(d.error);return}if(!venueData)venueData={venues:[]};if(!venueData.venues)venueData.venues=[];if(d.memberList)venueData.memberList=d.memberList;
 // 既存venueを探して置き換え
 var found=-1;for(var i=0;i<venueData.venues.length;i++){if(venueData.venues[i].spreadsheetId===ssId&&venueData.venues[i].sheetName===sn){found=i;break}}
 if(found>=0){venueData.venues[found]=d.venue;selectedVenueIndex=found}else{venueData.venues.push(d.venue);selectedVenueIndex=venueData.venues.length-1}
-selectedVenue=d.venue;(selectedVenue.blocks||[]).forEach(function(b){(b.teams||[]).forEach(function(t){if(t.receptionStatus===undefined){if(t.receptionChecked===true||t.receptionChecked==='TRUE')t.receptionStatus='checked';else t.receptionStatus=''}})});renderVenueDashboard();loadHistory();showScreen('screen-venue-dashboard')}).catch(function(e){hideLoading();showError(e.message)})}
+selectedVenue=d.venue;(selectedVenue.blocks||[]).forEach(function(b){(b.teams||[]).forEach(function(t){if(t.receptionStatus===undefined){if(t.receptionChecked===true||t.receptionChecked==='TRUE')t.receptionStatus='checked';else t.receptionStatus=''}})});renderVenueDashboard();loadHistory();showScreen('screen-venue-dashboard');_suppressReportSave=false}).catch(function(e){hideLoading();_suppressReportSave=false;showError(e.message)})}
 
-function selectVenue(idx){selectedVenueIndex=idx;selectedVenue=venueData.venues[idx];renderVenueDashboard();loadHistory();showScreen('screen-venue-dashboard')}
+function selectVenue(idx){_reportBuildKey=null;_suppressReportSave=true;selectedVenueIndex=idx;selectedVenue=venueData.venues[idx];renderVenueDashboard();loadHistory();showScreen('screen-venue-dashboard');_suppressReportSave=false}
 
 function renderVenueDashboard(){var v=selectedVenue;document.getElementById('venue-title').textContent=v.sheetName;var blocks=v.blocks||[];var el=document.getElementById('tournament-list');if(!blocks.length){el.innerHTML='<p class="empty-state">大会なし</p>';return}el.innerHTML=blocks.map(function(b,bi){var tc=(b.teams||[]).length;var mt=b.maxTeams||'';var prizes=b.prizes||[];var pl=['優勝','副賞','GT'];var prizeHtml=prizes.length?'<div style="display:flex;flex-direction:column;gap:2px;margin-top:4px">'+prizes.map(function(p,pi){return'<span style="font-size:11px;color:#af8700">'+pl[pi]+': '+esc(p)+'</span>'}).join('')+'</div>':'';
 var st={checked:0,cancel:0,unset:0,payWait:0,payDone:0};(b.teams||[]).forEach(function(t){if(t.receptionStatus==='checked')st.checked++;else if(t.receptionStatus==='cancel')st.cancel++;else st.unset++;if(t.receptionStatus!=='cancel'){var pay=String(t.payment||'');var isLP=(pay==='0'||pay==='false'||pay==='FALSE'||pay==='')&&t.price;if(isLP){if(t.paymentMethod==='端末決済'||t.paymentMethod==='決済済')st.payDone++;else st.payWait++}}});
@@ -617,7 +631,7 @@ function renderHistory(){var el=document.getElementById('history-list');if(!hist
 
 async function resendEmail(idx){var h=historyItems[idx];var btn=document.getElementById('resend-'+idx);if(!h||!btn)return;btn.disabled=true;btn.textContent='...';try{var r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'resendEmail',email:h.email,rep:h.rep,team:h.team,phone:h.phone})});var res=await r.json();if(res.email==='OK'){btn.textContent='完了';btn.style.background='#34c759'}else{btn.textContent='失敗';btn.disabled=false}}catch(e){btn.textContent='失敗';btn.disabled=false}}
 
-function selectTournament(bi){selectedBlockIndex=bi;renderTeamList();updateSyncTime();showScreen('screen-team-list')}
+function selectTournament(bi){selectedBlockIndex=bi;renderTeamList();updateSyncTime();_updateDirtyBadge();showScreen('screen-team-list')}
 
 function renderTeamList(){var b=selectedVenue.blocks[selectedBlockIndex];var tc=(b.teams||[]).length;var mt=b.maxTeams||'';var prizes=b.prizes||[];var pl2=['優勝','副賞','GT'];var prizeHtml2=prizes.length?'<div style="display:flex;flex-direction:column;gap:2px;margin-top:4px">'+prizes.map(function(p,pi){return'<span style="font-size:11px;color:#af8700">'+pl2[pi]+': '+esc(p)+'</span>'}).join('')+'</div>':'';document.getElementById('team-list-title').innerHTML=esc(b.tournamentName||'大会')+'<div class="card-meta" style="margin-top:4px;font-weight:400">'+(b.startTime?'<span>('+esc(b.startTime)+')</span>':'')+'<span>'+tc+'チーム'+(mt?'('+esc(mt)+')':'')+'</span>'+(b.level?'<span>'+esc(b.level)+'</span>':'')+'</div>'+prizeHtml2;var el=document.getElementById('team-list');var teams=b.teams||[];if(!teams.length){el.innerHTML='<p class="empty-state">チームなし</p>';return}el.innerHTML='<div class="rc-col-header"><span>受付</span></div>'+teams.map(function(t,ti){var rd=t.rentalInput||t.rental||'';var repName=t.furigana||t.rep||'-';var visitInfo=(t.rep&&t.rep.match(/初回|リピート/))?t.rep:'';var sokketsu=(t.salesActivity&&t.salesActivity.indexOf('即決')===0)?t.salesActivity:'';var rank=t.rank||'';var rankDisp=rank?(rank.match(/位/)?rank:rank+'位'):'';var tags='';
 if(visitInfo)tags+='<span class="tag visit">'+esc(visitInfo)+'</span>';
@@ -648,9 +662,38 @@ function openQR(){document.getElementById('qr-overlay').classList.add('show')}
 function closeQR(){document.getElementById('qr-overlay').classList.remove('show')}
 function showToast(msg,type){var el=document.getElementById('toast');el.textContent=msg;el.style.background=type==='error'?'#ff3b30':'#1d1d1f';el.classList.add('show');clearTimeout(window._toastTimer);window._toastTimer=setTimeout(function(){el.classList.remove('show')},2400)}
 function updateSyncTime(){var el=document.getElementById('sync-time');if(el){var d=new Date();el.textContent='更新: '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)}}
-async function syncTeamData(){var btn=document.getElementById('sync-btn');if(!btn||btn.classList.contains('loading'))return;btn.classList.add('loading');try{var r=await fetch(API_URL+'?action=getVenueReport&t='+Date.now());var d=await r.json();if(d.error){showToast('取得失敗','error');btn.classList.remove('loading');return}var venues=d.venues||[];for(var vi=0;vi<venues.length;vi++){if(venues[vi].spreadsheetId===selectedVenue.spreadsheetId&&venues[vi].sheetName===selectedVenue.sheetName){selectedVenue.blocks=venues[vi].blocks;(selectedVenue.blocks||[]).forEach(function(b){(b.teams||[]).forEach(function(t){if(t.receptionStatus===undefined){if(t.receptionChecked===true||t.receptionChecked==='TRUE')t.receptionStatus='checked';else t.receptionStatus=''}})});break}}renderTeamList();updateSyncTime();showToast('最新データに更新しました')}catch(e){showToast('通信エラー','error')}btn.classList.remove('loading')}
+async function syncTeamData(){var btn=document.getElementById('sync-btn');if(!btn||btn.classList.contains('loading'))return;if(_countDirtyTeams()>0){if(!confirm('未保存の編集が '+_countDirtyTeams()+' 件あります。更新すると破棄されますが続行しますか？'))return}btn.classList.add('loading');try{var r=await fetch(API_URL+'?action=getVenueReport&t='+Date.now());var d=await r.json();if(d.error){showToast('取得失敗','error');btn.classList.remove('loading');return}var venues=d.venues||[];for(var vi=0;vi<venues.length;vi++){if(venues[vi].spreadsheetId===selectedVenue.spreadsheetId&&venues[vi].sheetName===selectedVenue.sheetName){selectedVenue.blocks=venues[vi].blocks;(selectedVenue.blocks||[]).forEach(function(b){(b.teams||[]).forEach(function(t){if(t.receptionStatus===undefined){if(t.receptionChecked===true||t.receptionChecked==='TRUE')t.receptionStatus='checked';else t.receptionStatus=''}})});break}}renderTeamList();updateSyncTime();_updateDirtyBadge();showToast('最新データに更新しました')}catch(e){showToast('通信エラー','error')}btn.classList.remove('loading')}
 
-function saveLocalAndClose(){var b=selectedVenue.blocks[selectedBlockIndex];var t=b.teams[selectedTeamIndex];t.salesActivity=document.getElementById('bs-sales').value;t.rank=document.getElementById('bs-rank').value;t.remarks=document.getElementById('bs-remarks').value;t.rentalInput=document.getElementById('bs-rental-input').value;t.remittance=document.getElementById('bs-remittance').value;var pm=document.getElementById('bs-payment-method');if(pm)t.paymentMethod=pm.value;closeBottomSheet();renderTeamList()}
+function saveLocalAndClose(){var b=selectedVenue.blocks[selectedBlockIndex];var t=b.teams[selectedTeamIndex];t.salesActivity=document.getElementById('bs-sales').value;t.rank=document.getElementById('bs-rank').value;t.remarks=document.getElementById('bs-remarks').value;t.rentalInput=document.getElementById('bs-rental-input').value;t.remittance=document.getElementById('bs-remittance').value;var pm=document.getElementById('bs-payment-method');if(pm)t.paymentMethod=pm.value;closeBottomSheet();renderTeamList();_saveTeamDataSilent(t)}
+
+// 受付ボトムシート「閉じる」時のバックグラウンド保存（R1: 失敗時toast+リトライ, R2: 差分検出）
+function _teamSaveSnapshot(t){return JSON.stringify({s:t.salesActivity||'',r:t.rank||'',m:t.remarks||'',ri:t.rentalInput||'',rem:t.remittance||'',pm:t.paymentMethod||'',rc:t.receptionStatus||''})}
+function _saveTeamDataSilent(t,isRetry){
+  if(!t||!selectedVenue)return;
+  var snap=_teamSaveSnapshot(t);
+  if(t._lastSaved===snap&&!isRetry){return;} // 差分なしならスキップ(R2)
+  try{
+    fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({
+      action:'submitReport',
+      spreadsheetId:selectedVenue.spreadsheetId,
+      sheetName:selectedVenue.sheetName,
+      teams:[{teamRow:t.teamRow,salesActivity:t.salesActivity||'',rank:t.rank||'',remarks:t.remarks||'',rentalInput:t.rentalInput||'',remittance:t.remittance||'',paymentMethod:t.paymentMethod||'',receptionChecked:t.receptionStatus==='checked'}],
+      staffList:[],markComplete:false
+    })}).then(function(r){return r.json()}).then(function(res){
+      if(res&&res.error){
+        t._dirty=true;showToast('保存失敗: '+res.error,'error');_updateDirtyBadge();
+        if(!isRetry)setTimeout(function(){_saveTeamDataSilent(t,true)},5000);
+      }else{
+        t._dirty=false;t._lastSaved=snap;_updateDirtyBadge();
+      }
+    }).catch(function(e){
+      t._dirty=true;showToast('保存失敗（通信エラー）','error');_updateDirtyBadge();
+      if(!isRetry)setTimeout(function(){_saveTeamDataSilent(t,true)},5000);
+    });
+  }catch(e){t._dirty=true;_updateDirtyBadge()}
+}
+function _countDirtyTeams(){var n=0;if(!selectedVenue)return 0;(selectedVenue.blocks||[]).forEach(function(b){(b.teams||[]).forEach(function(t){if(t._dirty===true)n++})});return n}
+function _updateDirtyBadge(){var btn=document.getElementById('sync-btn');if(!btn)return;var n=_countDirtyTeams();var existing=btn.querySelector('.dirty-badge');if(existing)existing.remove();if(n>0){var sp=document.createElement('span');sp.className='dirty-badge';sp.style.cssText='display:inline-block;margin-left:6px;padding:1px 6px;background:#ff3b30;color:#fff;border-radius:10px;font-size:11px;font-weight:700';sp.textContent='未保存'+n;btn.appendChild(sp)}}
 
 function buildSelect(id,opts,sel){var h='<select id="'+id+'">';opts.forEach(function(o){h+='<option value="'+esc(o)+'"'+(o===sel?' selected':'')+'>'+(o||'---')+'</option>'});return h+'</select>'}
 
@@ -664,19 +707,22 @@ async function fetchTeamEmail(team){try{var b=selectedVenue.blocks[selectedBlock
 
 function selectSkType(n){skSlotCount=n;document.querySelectorAll('#sk-type-selector .type-btn').forEach(function(b,i){b.classList.toggle('selected',i===n-1)});renderSkSlots()}
 
-function renderSkSlots(){var c=document.getElementById('sk-booking-slots');var h='';for(var i=1;i<=skSlotCount;i++){h+='<div class="booking-block"><div class="booking-number">予約'+i+'</div>';if(i>1)h+='<label class="copy-check"><input type="checkbox" id="sk-copy'+i+'" onchange="skApplyCopy('+i+')">予約1と同じ</label>';h+='<div class="form-group"><label>日付 <span class="req">*</span></label><input type="date" id="sk-date'+i+'"></div><div class="form-group"><label>会場 <span class="req">*</span></label><input type="text" id="sk-venue'+i+'" placeholder="会場名"></div><div class="form-row"><div class="form-group"><label>受付 <span class="req">*</span></label><input type="time" id="sk-time'+i+'" value="10:00"></div><div class="form-group"><label>レベル <span class="req">*</span></label><input type="text" id="sk-level'+i+'" placeholder="エンジョイ"></div></div><div class="slot-payment"><div class="form-group"><label>金額 <span class="req">*</span></label><input type="number" id="sk-price'+i+'" placeholder="17000" inputmode="numeric" oninput="skCalcTotal()"></div><div class="form-group"><label>クーポン</label><select id="sk-coupon'+i+'" onchange="skCalcTotal()"><option value="0">なし</option>';[1000,2000,3000,4000,5000,8000].forEach(function(v){h+='<option value="'+v+'">'+v.toLocaleString()+'円引</option>'});h+='</select></div><div class="rental-section"><div class="rental-title">レンタル</div><div class="rental-item"><span class="rental-label">ビブス(\xA51,000)</span><select id="sk-bib'+i+'" onchange="skCalcTotal()" style="width:60px">';for(var bn=0;bn<=10;bn++)h+='<option value="'+bn+'">'+bn+'</option>';h+='</select></div><div class="rental-item"><span class="rental-label">ボール(\xA5500)</span><select id="sk-ball'+i+'" onchange="skCalcTotal()" style="width:60px">';for(var bn=0;bn<=10;bn++)h+='<option value="'+bn+'">'+bn+'</option>';h+='</select></div><div class="rental-item"><span class="rental-label">シューズ(\xA51,500)</span><select id="sk-shoes'+i+'" onchange="skUpdateShoeSizes('+i+');skCalcTotal()" style="width:60px">';for(var sn=0;sn<=10;sn++)h+='<option value="'+sn+'">'+sn+'</option>';h+='</select></div><div id="sk-shoeSizes'+i+'"></div></div><div id="sk-slotSummary'+i+'"></div></div><label style="display:flex;align-items:center;gap:10px;margin-top:12px;padding:10px 12px;background:#fff0f0;border:2px solid #ffcdd2;border-radius:10px;font-size:14px;color:#c62828;font-weight:600;cursor:pointer"><input type="checkbox" id="sk-isLast'+i+'" style="width:20px;height:20px;accent-color:#d32f2f">満枠（この大会の枠は終了）</label></div>'}c.innerHTML=h;skCalcTotal()}
+function renderSkSlots(){var c=document.getElementById('sk-booking-slots');var h='';for(var i=1;i<=skSlotCount;i++){h+='<div class="booking-block"><div class="booking-number">予約'+i+'</div>';if(i>1)h+='<label class="copy-check"><input type="checkbox" id="sk-copy'+i+'" onchange="skApplyCopy('+i+')">予約1と同じ</label>';h+='<div class="form-group"><label>日付 <span class="req">*</span></label><input type="date" id="sk-date'+i+'"></div><div class="form-group"><label>会場 <span class="req">*</span></label><input type="text" id="sk-venue'+i+'" placeholder="会場名"></div><div class="form-row"><div class="form-group"><label>受付 <span class="req">*</span></label><input type="time" id="sk-time'+i+'" value="10:00"></div><div class="form-group"><label>レベル <span class="req">*</span></label><input type="text" id="sk-level'+i+'" placeholder="エンジョイ"></div></div><div class="slot-payment"><div class="form-group"><label>金額 <span class="req">*</span></label><input type="number" id="sk-price'+i+'" placeholder="17000" inputmode="numeric" oninput="skCalcTotal()"></div><div class="form-group"><label>クーポン</label><select id="sk-coupon'+i+'" onchange="skCalcTotal()"><option value="0">なし</option>';[1000,2000,3000,4000,5000,8000].forEach(function(v){h+='<option value="'+v+'">'+v.toLocaleString()+'円引</option>'});h+='<option value="free">無料招待（全額割引）</option></select></div><div class="rental-section"><div class="rental-title">レンタル</div><div class="rental-item"><span class="rental-label">ビブス(\xA51,000)</span><select id="sk-bib'+i+'" onchange="skCalcTotal()" style="width:60px">';for(var bn=0;bn<=10;bn++)h+='<option value="'+bn+'">'+bn+'</option>';h+='</select></div><div class="rental-item"><span class="rental-label">ボール(\xA5500)</span><select id="sk-ball'+i+'" onchange="skCalcTotal()" style="width:60px">';for(var bn=0;bn<=10;bn++)h+='<option value="'+bn+'">'+bn+'</option>';h+='</select></div><div class="rental-item"><span class="rental-label">シューズ(\xA51,500)</span><select id="sk-shoes'+i+'" onchange="skUpdateShoeSizes('+i+');skCalcTotal()" style="width:60px">';for(var sn=0;sn<=10;sn++)h+='<option value="'+sn+'">'+sn+'</option>';h+='</select></div><div id="sk-shoeSizes'+i+'"></div></div><div id="sk-slotSummary'+i+'"></div></div><label style="display:flex;align-items:center;gap:10px;margin-top:12px;padding:10px 12px;background:#fff0f0;border:2px solid #ffcdd2;border-radius:10px;font-size:14px;color:#c62828;font-weight:600;cursor:pointer"><input type="checkbox" id="sk-isLast'+i+'" style="width:20px;height:20px;accent-color:#d32f2f">満枠（この大会の枠は終了）</label></div>'}c.innerHTML=h;skCalcTotal()}
 
 function skApplyCopy(n){var ck=document.getElementById('sk-copy'+n).checked;['date','venue','time','level'].forEach(function(f){var inp=document.getElementById('sk-'+f+n);if(ck){inp.value=document.getElementById('sk-'+f+'1').value;inp.readOnly=true;inp.style.opacity='.5'}else{inp.readOnly=false;inp.style.opacity=''}})}
 function skUpdateShoeSizes(s){var cnt=parseInt(document.getElementById('sk-shoes'+s).value)||0;var c=document.getElementById('sk-shoeSizes'+s);var h='';for(var n=1;n<=cnt;n++){h+='<div class="rental-item" style="padding-left:24px"><span style="font-size:12px;color:#86868b">'+n+'足目</span><select id="sk-shoesize'+s+'_'+n+'" style="width:80px"><option value="">選択</option>';for(var sz=26;sz<=29;sz+=0.5)h+='<option value="'+sz.toFixed(1)+'">'+sz.toFixed(1)+'cm</option>';h+='</select></div>'}c.innerHTML=h}
 function skGetRentalTotal(i){return(parseInt(document.getElementById('sk-bib'+i).value)||0)*1000+(parseInt(document.getElementById('sk-ball'+i).value)||0)*500+(parseInt(document.getElementById('sk-shoes'+i).value)||0)*1500}
 function skGetRentalLabels(i){var items=[];var bib=parseInt(document.getElementById('sk-bib'+i).value)||0;if(bib)items.push('ビブス'+bib+'(\xA5'+(bib*1000).toLocaleString()+')');var ball=parseInt(document.getElementById('sk-ball'+i).value)||0;if(ball)items.push('ボール'+ball+'(\xA5'+(ball*500).toLocaleString()+')');var shoes=parseInt(document.getElementById('sk-shoes'+i).value)||0;if(shoes){var sizes=[];for(var n=1;n<=shoes;n++){var el=document.getElementById('sk-shoesize'+i+'_'+n);if(el&&el.value)sizes.push(el.value+'cm')}items.push('シューズ'+shoes+(sizes.length?'('+sizes.join(',')+')':'')+' \xA5'+(shoes*1500).toLocaleString())}return items}
 function skGetRentalData(i){var shoes=parseInt(document.getElementById('sk-shoes'+i).value)||0;var sizes=[];for(var n=1;n<=shoes;n++){var el=document.getElementById('sk-shoesize'+i+'_'+n);if(el&&el.value)sizes.push(el.value)}return{bibCount:parseInt(document.getElementById('sk-bib'+i).value)||0,ballCount:parseInt(document.getElementById('sk-ball'+i).value)||0,shoesCount:shoes,shoesSizes:sizes,rentalTotal:skGetRentalTotal(i),rentalLabels:skGetRentalLabels(i)}}
-function skCalcTotal(){var grand=0,bh='';for(var i=1;i<=skSlotCount;i++){var p=parseInt((document.getElementById('sk-price'+i)||{}).value)||0;var d=parseInt((document.getElementById('sk-coupon'+i)||{}).value)||0;var r=skGetRentalTotal(i);var st=p-d+r;var se=document.getElementById('sk-slotSummary'+i);if(se&&p){var sh='<div class="slot-summary"><div class="summary-row"><span>金額</span><span>\xA5'+p.toLocaleString()+'</span></div>';if(d)sh+='<div class="summary-row discount"><span>クーポン</span><span>-\xA5'+d.toLocaleString()+'</span></div>';if(r){sh+='<div class="summary-row rental"><span>レンタル</span><span>+\xA5'+r.toLocaleString()+'</span></div>';var lb=skGetRentalLabels(i);if(lb.length)sh+='<div class="rental-detail">('+lb.join(' / ')+')</div>'}sh+='<div class="summary-total"><span>小計</span><span>\xA5'+st.toLocaleString()+'</span></div></div>';se.innerHTML=sh;bh+='<div class="gt-breakdown">予約'+i+': \xA5'+st.toLocaleString()+'</div>';grand+=st}else if(se)se.innerHTML=''}document.getElementById('sk-total-breakdown').innerHTML=bh;document.getElementById('sk-grand-total').textContent=grand?'\xA5'+grand.toLocaleString():'-'}
+function skCalcTotal(){var grand=0,bh='';for(var i=1;i<=skSlotCount;i++){var p=parseInt((document.getElementById('sk-price'+i)||{}).value)||0;var cv=(document.getElementById('sk-coupon'+i)||{}).value;var d=(cv==='free')?p:(parseInt(cv)||0);var r=skGetRentalTotal(i);var st=p-d+r;var se=document.getElementById('sk-slotSummary'+i);if(se&&p){var sh='<div class="slot-summary"><div class="summary-row"><span>金額</span><span>\xA5'+p.toLocaleString()+'</span></div>';if(d)sh+='<div class="summary-row discount"><span>クーポン'+(cv==='free'?'（無料招待）':'')+'</span><span>-\xA5'+d.toLocaleString()+'</span></div>';if(r){sh+='<div class="summary-row rental"><span>レンタル</span><span>+\xA5'+r.toLocaleString()+'</span></div>';var lb=skGetRentalLabels(i);if(lb.length)sh+='<div class="rental-detail">('+lb.join(' / ')+')</div>'}sh+='<div class="summary-total"><span>小計</span><span>\xA5'+st.toLocaleString()+'</span></div></div>';se.innerHTML=sh;bh+='<div class="gt-breakdown">予約'+i+': \xA5'+st.toLocaleString()+'</div>';grand+=st}else if(se)se.innerHTML=''}document.getElementById('sk-total-breakdown').innerHTML=bh;
+// 金額入力があれば ¥0 でも表示（無料招待対応）。未入力のみ '-'。
+var _hasAnyPrice=false;for(var _pi=1;_pi<=skSlotCount;_pi++){if(parseInt((document.getElementById('sk-price'+_pi)||{}).value)>0){_hasAnyPrice=true;break}}
+document.getElementById('sk-grand-total').textContent=_hasAnyPrice?'\xA5'+grand.toLocaleString():'-'}
 
 function showSokketsuConfirm(){var sn=document.getElementById('sk-staff-name').value.trim();if(!sn){alert('入力者名を入力してください');return}localStorage.setItem(LS_SK_STAFF,sn);var inputEmail=document.getElementById('sk-input-email').value.trim()||document.getElementById('sk-disp-email').textContent.trim();if(!inputEmail||inputEmail.indexOf('@')<1){alert('メールアドレスを正しく入力してください。変更ボタンから入力できます');return}for(var i=1;i<=skSlotCount;i++){if(!document.getElementById('sk-date'+i).value||!document.getElementById('sk-venue'+i).value.trim()||!document.getElementById('sk-time'+i).value.trim()||!document.getElementById('sk-level'+i).value.trim()||!document.getElementById('sk-price'+i).value){alert('予約'+i+'の入力が不足しています');return}}var b=selectedVenue.blocks[selectedBlockIndex];var t=b.teams[selectedTeamIndex];var repName=t.furigana||t.rep||'-';document.getElementById('sk-confirm-rep').textContent=repName;document.getElementById('sk-confirm-email').textContent=inputEmail;var wd=['日','月','火','水','木','金','土'];var h='<div class="confirm-section" style="text-align:center;padding:16px"><div style="font-size:18px;font-weight:700">'+esc(t.teamName)+'</div><div style="font-size:13px;color:#636366;margin-top:4px">代表者: '+esc(repName)+' 様</div></div>';for(var i=1;i<=skSlotCount;i++){var dv=document.getElementById('sk-date'+i).value;var dd=dv;try{var dt=new Date(dv);dd=(dt.getMonth()+1)+'月'+dt.getDate()+'日('+wd[dt.getDay()]+')'}catch(e){}h+='<div class="confirm-section"><div class="confirm-item" style="font-size:16px;font-weight:700">'+dd+'</div><div class="confirm-item">'+esc(document.getElementById('sk-venue'+i).value)+'</div><div class="confirm-item">'+esc(document.getElementById('sk-time'+i).value)+'〜 / '+esc(document.getElementById('sk-level'+i).value)+'</div>';if(document.getElementById('sk-isLast'+i).checked)h+='<div class="confirm-item" style="color:#c62828;font-weight:700;font-size:13px">満枠（この大会の枠は終了）</div>';h+='</div>'}h+='<div style="background:#e8f0fe;border-radius:12px;padding:16px;text-align:center;margin-bottom:12px"><div style="font-size:13px;color:#86868b">合計お支払い額</div><div style="font-size:24px;font-weight:800;color:#1a73e8">'+document.getElementById('sk-grand-total').textContent+'</div></div>';var skRemarks=(document.getElementById('sk-remarks').value||'').trim();if(skRemarks){h+='<div class="confirm-section" style="background:#fff3e0"><div style="font-size:12px;color:#e65100;font-weight:700;margin-bottom:4px">備考（社内用）</div><div style="font-size:13px;white-space:pre-wrap">'+esc(skRemarks)+'</div></div>'}h+='<div style="text-align:center;font-size:13px;color:#86868b">入力者: '+esc(sn)+'</div>';document.getElementById('sokketsu-confirm-body').innerHTML=h;document.getElementById('sokketsu-confirm-overlay').classList.add('show')}
 function closeSokketsuConfirm(){document.getElementById('sokketsu-confirm-overlay').classList.remove('show')}
 
-async function doSubmitSokketsu(){if(isSending)return;isSending=true;var btn=document.getElementById('sokketsu-send-btn');btn.disabled=true;closeSokketsuConfirm();showLoading('送信中');var b=selectedVenue.blocks[selectedBlockIndex];var t=b.teams[selectedTeamIndex];var cl={'0':'なし','1000':'1,000円引き','2000':'2,000円引き','3000':'3,000円引き','4000':'4,000円引き','5000':'5,000円引き','8000':'8,000円引き'};var bks=[],grand=0,rg=0;for(var i=1;i<=skSlotCount;i++){var p=parseInt(document.getElementById('sk-price'+i).value)||0;var cv=document.getElementById('sk-coupon'+i).value;var d=parseInt(cv)||0;var sub=p-d;grand+=sub;var rental=skGetRentalData(i);rg+=rental.rentalTotal;bks.push({date:document.getElementById('sk-date'+i).value,venue:document.getElementById('sk-venue'+i).value,time:document.getElementById('sk-time'+i).value,level:document.getElementById('sk-level'+i).value,price:p,couponValue:cv,couponLabel:cl[cv]||'なし',discount:d,subtotal:sub,rental:rental})}var enteredEmail=document.getElementById('sk-input-email').value.trim();var skRemarks=(document.getElementById('sk-remarks').value||'').trim();var lf='';for(var li=1;li<=skSlotCount;li++)lf+=document.getElementById('sk-isLast'+li).checked?'1':'0';while(lf.length<5)lf+='0';var fd={staffName:document.getElementById('sk-staff-name').value,slotCount:skSlotCount,team:t.teamName,rep:t.rep||'',phone:t.phone||'',email:enteredEmail,realEmail:t.realEmail||t.email||'',tournamentId:b.tournamentId||'',tournamentName:b.tournamentName||'',venue:selectedVenue.sheetName,bookings:bks,grandTotal:grand+rg,rentalGrandTotal:rg,remarks:skRemarks,lastFlags:lf};try{var r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(fd)});var res=await r.json();hideLoading();isSending=false;var cwOk=res.cw==='OK';var emailOk=res.email==='OK'||(res.email+'').indexOf('スキップ')===0;var emailSkipped=(res.email+'').indexOf('スキップ')===0;var repName=t.furigana||t.rep||'';
+async function doSubmitSokketsu(){if(isSending)return;isSending=true;var btn=document.getElementById('sokketsu-send-btn');btn.disabled=true;closeSokketsuConfirm();showLoading('送信中');var b=selectedVenue.blocks[selectedBlockIndex];var t=b.teams[selectedTeamIndex];var cl={'0':'なし','1000':'1,000円引き','2000':'2,000円引き','3000':'3,000円引き','4000':'4,000円引き','5000':'5,000円引き','8000':'8,000円引き','free':'無料招待'};var bks=[],grand=0,rg=0;for(var i=1;i<=skSlotCount;i++){var p=parseInt(document.getElementById('sk-price'+i).value)||0;var cv=document.getElementById('sk-coupon'+i).value;var d=(cv==='free')?p:(parseInt(cv)||0);var sub=p-d;grand+=sub;var rental=skGetRentalData(i);rg+=rental.rentalTotal;bks.push({date:document.getElementById('sk-date'+i).value,venue:document.getElementById('sk-venue'+i).value,time:document.getElementById('sk-time'+i).value,level:document.getElementById('sk-level'+i).value,price:p,couponValue:cv,couponLabel:cl[cv]||'なし',discount:d,subtotal:sub,rental:rental})}var enteredEmail=document.getElementById('sk-input-email').value.trim();var skRemarks=(document.getElementById('sk-remarks').value||'').trim();var lf='';for(var li=1;li<=skSlotCount;li++)lf+=document.getElementById('sk-isLast'+li).checked?'1':'0';while(lf.length<5)lf+='0';var fd={staffName:document.getElementById('sk-staff-name').value,slotCount:skSlotCount,team:t.teamName,rep:t.rep||'',phone:t.phone||'',email:enteredEmail,realEmail:t.realEmail||t.email||'',tournamentId:b.tournamentId||'',tournamentName:b.tournamentName||'',venue:selectedVenue.sheetName,bookings:bks,grandTotal:grand+rg,rentalGrandTotal:rg,remarks:skRemarks,lastFlags:lf};try{var r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(fd)});var res=await r.json();hideLoading();isSending=false;var cwOk=res.cw==='OK';var emailOk=res.email==='OK'||(res.email+'').indexOf('スキップ')===0;var emailSkipped=(res.email+'').indexOf('スキップ')===0;var repName=t.furigana||t.rep||'';
 // 完了画面（4パターン）
 var doneIcon=document.querySelector('.done-icon');var doneTitle=document.getElementById('done-title');var doneSub=document.getElementById('done-subtitle');var ee=document.getElementById('done-error');ee.classList.add('hidden');
 if(cwOk&&emailOk){doneTitle.textContent='送信完了';doneSub.innerHTML=repName+'さんへメール送信済<br><span style="font-size:12px;color:#86868b">'+esc(enteredEmail)+'</span>'}
@@ -685,12 +731,20 @@ else if(!cwOk&&emailOk){doneTitle.textContent='メール送信済';doneSub.textC
 else{doneTitle.textContent='送信失敗';doneSub.textContent='電波が届きにくい場所かもしれません';ee.textContent='場所を変えてもう一度お試しください';ee.classList.remove('hidden')}
 showScreen('screen-done')}catch(e){hideLoading();isSending=false;document.getElementById('done-title').textContent='送信失敗';document.getElementById('done-subtitle').textContent='通信エラー: '+e.message;document.getElementById('done-error').classList.add('hidden');showScreen('screen-done')}}
 
-function goReport(){showScreen('screen-report');var saved=localStorage.getItem(LS_STAFF);if(saved)document.getElementById('report-staff-name').value=saved;renderReportBlocks();
-// スタッフデータを遅延取得
-var sa=selectedVenue.staffArea;if(sa){renderReportForm();return}
-document.getElementById('staff-area').innerHTML='<p class="empty-state">スタッフデータ読み込み中...</p>';
-document.getElementById('check-items-area').innerHTML='<p class="empty-state">読み込み中...</p>';
-fetch(API_URL+'?action=getStaffData&ssId='+encodeURIComponent(selectedVenue.spreadsheetId)+'&sheetName='+encodeURIComponent(selectedVenue.sheetName)).then(function(r){return r.json()}).then(function(d){if(d.error){document.getElementById('staff-area').innerHTML='<p class="empty-state">'+esc(d.error)+'</p>';return}selectedVenue.staffArea=d.staffArea;if(d.memberList)venueData.memberList=d.memberList;if(d.overtimeContext)selectedVenue.overtimeContext=d.overtimeContext;renderReportFormStaff();renderCheckItems()}).catch(function(e){document.getElementById('staff-area').innerHTML='<p class="empty-state">取得失敗</p>'})}
+function goReport(){
+  var currentKey=selectedVenue.spreadsheetId+'|'+selectedVenue.sheetName;
+  // 同じ会場で再度開いた場合は DOM 保持（再構築スキップ） - 要望2A
+  if(_reportBuildKey===currentKey){showScreen('screen-report');return}
+  _reportBuildKey=currentKey;
+  showScreen('screen-report');
+  var saved=localStorage.getItem(LS_STAFF);if(saved)document.getElementById('report-staff-name').value=saved;
+  renderReportBlocks();
+  // スタッフデータを遅延取得
+  var sa=selectedVenue.staffArea;if(sa){renderReportForm();_restoreReportLocalStorage&&_restoreReportLocalStorage();return}
+  document.getElementById('staff-area').innerHTML='<p class="empty-state">スタッフデータ読み込み中...</p>';
+  document.getElementById('check-items-area').innerHTML='<p class="empty-state">読み込み中...</p>';
+  fetch(API_URL+'?action=getStaffData&ssId='+encodeURIComponent(selectedVenue.spreadsheetId)+'&sheetName='+encodeURIComponent(selectedVenue.sheetName)).then(function(r){return r.json()}).then(function(d){if(d.error){document.getElementById('staff-area').innerHTML='<p class="empty-state">'+esc(d.error)+'</p>';return}selectedVenue.staffArea=d.staffArea;if(d.memberList)venueData.memberList=d.memberList;if(d.overtimeContext)selectedVenue.overtimeContext=d.overtimeContext;renderReportFormStaff();renderCheckItems();_restoreReportLocalStorage&&_restoreReportLocalStorage()}).catch(function(e){document.getElementById('staff-area').innerHTML='<p class="empty-state">取得失敗</p>'})
+}
 
 function renderReportForm(){renderReportBlocks();renderReportFormStaff();renderCheckItems()}
 function renderReportFormStaff(){var sa=selectedVenue.staffArea||{};document.getElementById('accident-report').value=sa.accidentReport||'';document.getElementById('other-report').value=sa.otherReport||'';document.getElementById('nw-start').value=sa.defaultStart||'09:00';document.getElementById('nw-end').value=sa.defaultEnd||'18:00';document.getElementById('nw-break').value=sa.defaultBreak||60;var oc=selectedVenue.overtimeContext||{};document.getElementById('final-game-end-time').value=oc.dismissalTimeF12||'';var existing=oc.existingOvertimeReason||'';var m=existing.match(/^その他:\s*(.*)$/);if(m){document.getElementById('overtime-reason').value='その他';document.getElementById('overtime-other-detail').value=m[1]}else{document.getElementById('overtime-reason').value=existing;document.getElementById('overtime-other-detail').value=''}onOvertimeReasonChange();renderStaff();setTimeout(checkOvertimeStatus,50)}
@@ -716,7 +770,7 @@ function renderCheckItems(){var sa=selectedVenue.staffArea||{};var items=sa.chec
 function showReportConfirm(){if(isSending)return;var sn=document.getElementById('report-staff-name').value.trim();if(!sn){alert('報告者名を入力');document.getElementById('report-staff-name').focus();return}localStorage.setItem(LS_STAFF,sn);var errors=[];var blocks=selectedVenue.blocks||[];blocks.forEach(function(b,bi){if(document.getElementById('rpt-cancel-'+bi).checked)return;(b.teams||[]).forEach(function(t,ti){if(!document.getElementById('rpt-sales-'+bi+'-'+ti).value)errors.push(t.teamName+' 営業未選択')})});var sa=selectedVenue.staffArea||{};var ci=sa.checkItems||[];var uc=0;ci.forEach(function(item,i){if(!document.getElementById('chk-'+i).checked)uc++});if(uc)errors.push(uc+'件未チェック');var fge=document.getElementById('final-game-end-time').value;if(!fge)errors.push('最終試合終了時刻 未入力');var otSect=document.getElementById('overtime-section');if(otSect&&!otSect.classList.contains('hidden')){var otR=document.getElementById('overtime-reason').value;if(!otR)errors.push('延長理由 未選択');else if(otR==='その他'&&!document.getElementById('overtime-other-detail').value.trim())errors.push('延長理由(その他)の詳細 未入力')}if(errors.length){alert(errors.join('\n'));return}var h='<div class="confirm-section"><div class="confirm-section-title">報告者</div><div class="confirm-item">'+esc(sn)+'</div></div>';blocks.forEach(function(b,bi){var tl=(b.teams||[]).map(function(t,ti){var s=document.getElementById('rpt-sales-'+bi+'-'+ti).value;var r=document.getElementById('rpt-rank-'+bi+'-'+ti).value;return'<div class="confirm-item">'+esc(t.teamName)+' '+esc(s)+' '+esc(r)+'</div>'}).join('');h+='<div class="confirm-section"><div class="confirm-section-title">'+esc(b.tournamentName||'')+'</div>'+tl+'</div>'});var staffH='';var staffCount=0;for(var i=0;i<13;i++){var nm=document.getElementById('sn-'+i).value.trim();if(nm){staffCount++;var ci=document.getElementById('sci-'+i).value||'-';var co=document.getElementById('sco-'+i).value||'-';var br=document.getElementById('sb-'+i).value||'0';staffH+='<div class="confirm-item">'+esc(nm)+' '+esc(ci)+'〜'+esc(co)+' (休憩'+esc(br)+'分)</div>'}}if(staffCount){h+='<div class="confirm-section"><div class="confirm-section-title">スタッフ勤務 ('+staffCount+'名)</div>'+staffH+'</div>'}var acc=document.getElementById('accident-report').value.trim();var oth=document.getElementById('other-report').value.trim();if(acc||oth){h+='<div class="confirm-section"><div class="confirm-section-title">現場報告</div>';if(acc)h+='<div class="confirm-item" style="color:#ff3b30">⚠ '+esc(acc)+'</div>';if(oth)h+='<div class="confirm-item">'+esc(oth)+'</div>';h+='</div>'}var fgeVal=document.getElementById('final-game-end-time').value;if(fgeVal)h+='<div class="confirm-section"><div class="confirm-section-title">最終試合終了時刻</div><div class="confirm-item">'+esc(fgeVal)+'</div></div>';var otVisible=!document.getElementById('overtime-section').classList.contains('hidden');var otReasonVal=document.getElementById('overtime-reason').value;var otDetailVal=document.getElementById('overtime-other-detail').value.trim();var otDisplay=otReasonVal==='その他'&&otDetailVal?otReasonVal+': '+otDetailVal:otReasonVal;if(otVisible&&otReasonVal)h+='<div class="confirm-section"><div class="confirm-section-title">延長理由</div><div class="confirm-item">'+esc(otDisplay)+'</div></div>';document.getElementById('report-confirm-body').innerHTML=h;document.getElementById('report-confirm-overlay').classList.add('show')}
 function closeReportConfirm(){document.getElementById('report-confirm-overlay').classList.remove('show')}
 
-async function doSubmitReport(){if(isSending)return;isSending=true;document.getElementById('report-send-btn').disabled=true;closeReportConfirm();showLoading('送信中');var blocks=selectedVenue.blocks||[];var teams=[];blocks.forEach(function(b,bi){(b.teams||[]).forEach(function(t,ti){teams.push({teamRow:t.teamRow,salesActivity:document.getElementById('rpt-sales-'+bi+'-'+ti).value,rank:document.getElementById('rpt-rank-'+bi+'-'+ti).value,remarks:document.getElementById('rpt-remarks-'+bi+'-'+ti).value,rentalInput:t.rentalInput||'',remittance:t.remittance||'',paymentMethod:t.paymentMethod||''})})});var staffList=[];var sa=selectedVenue.staffArea||{};var slots=sa.staff||[];for(var i=0;i<13;i++){var name=document.getElementById('sn-'+i).value.trim();var row=(slots[i]&&slots[i].row)?slots[i].row:(390+i);staffList.push({row:row,name:name,checkIn:document.getElementById('sci-'+i).value,checkOut:document.getElementById('sco-'+i).value,breakMin:parseInt(document.getElementById('sb-'+i).value)||0,normalWork:document.getElementById('snw-'+i).checked})}var checkItems=(sa.checkItems||[]).map(function(item,i){return{row:item.row,checked:document.getElementById('chk-'+i).checked}});var otSectVisible=!document.getElementById('overtime-section').classList.contains('hidden');var otR=document.getElementById('overtime-reason').value||'';var otD=document.getElementById('overtime-other-detail').value.trim();var overtimeReasonSend=otSectVisible?(otR==='その他'&&otD?otR+': '+otD:otR):'';var payload={action:'submitReport',staffName:document.getElementById('report-staff-name').value.trim(),spreadsheetId:selectedVenue.spreadsheetId,sheetName:selectedVenue.sheetName,teams:teams,staffList:staffList,accidentReport:document.getElementById('accident-report').value.trim(),otherReport:document.getElementById('other-report').value.trim(),checkItems:checkItems,finalGameEndTime:document.getElementById('final-game-end-time').value||'',overtimeReason:overtimeReasonSend,markComplete:true};try{var r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});var res=await r.json();hideLoading();isSending=false;document.getElementById('done-title').textContent='報告完了';document.getElementById('done-subtitle').textContent=selectedVenue.sheetName;var ee=document.getElementById('done-error');if(res.error){ee.textContent=res.error;ee.classList.remove('hidden')}else ee.classList.add('hidden');showScreen('screen-done')}catch(e){hideLoading();isSending=false;document.getElementById('report-send-btn').disabled=false;alert(e.message)}}
+async function doSubmitReport(){if(isSending)return;isSending=true;document.getElementById('report-send-btn').disabled=true;closeReportConfirm();showLoading('送信中');var blocks=selectedVenue.blocks||[];var teams=[];blocks.forEach(function(b,bi){(b.teams||[]).forEach(function(t,ti){teams.push({teamRow:t.teamRow,salesActivity:document.getElementById('rpt-sales-'+bi+'-'+ti).value,rank:document.getElementById('rpt-rank-'+bi+'-'+ti).value,remarks:document.getElementById('rpt-remarks-'+bi+'-'+ti).value,rentalInput:t.rentalInput||'',remittance:t.remittance||'',paymentMethod:t.paymentMethod||''})})});var staffList=[];var sa=selectedVenue.staffArea||{};var slots=sa.staff||[];for(var i=0;i<13;i++){var name=document.getElementById('sn-'+i).value.trim();var row=(slots[i]&&slots[i].row)?slots[i].row:(390+i);staffList.push({row:row,name:name,checkIn:document.getElementById('sci-'+i).value,checkOut:document.getElementById('sco-'+i).value,breakMin:parseInt(document.getElementById('sb-'+i).value)||0,normalWork:document.getElementById('snw-'+i).checked})}var checkItems=(sa.checkItems||[]).map(function(item,i){return{row:item.row,checked:document.getElementById('chk-'+i).checked}});var otSectVisible=!document.getElementById('overtime-section').classList.contains('hidden');var otR=document.getElementById('overtime-reason').value||'';var otD=document.getElementById('overtime-other-detail').value.trim();var overtimeReasonSend=otSectVisible?(otR==='その他'&&otD?otR+': '+otD:otR):'';var payload={action:'submitReport',staffName:document.getElementById('report-staff-name').value.trim(),spreadsheetId:selectedVenue.spreadsheetId,sheetName:selectedVenue.sheetName,teams:teams,staffList:staffList,accidentReport:document.getElementById('accident-report').value.trim(),otherReport:document.getElementById('other-report').value.trim(),checkItems:checkItems,finalGameEndTime:document.getElementById('final-game-end-time').value||'',overtimeReason:overtimeReasonSend,markComplete:true};try{var r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});var res=await r.json();hideLoading();isSending=false;document.getElementById('done-title').textContent='報告完了';document.getElementById('done-subtitle').textContent=selectedVenue.sheetName;var ee=document.getElementById('done-error');if(res.error){ee.textContent=res.error;ee.classList.remove('hidden');showScreen('screen-done')}else{ee.classList.add('hidden');_suppressReportSave=true;showScreen('screen-done');_reportBuildKey=null;_clearReportLocalStorage&&_clearReportLocalStorage();_suppressReportSave=false}}catch(e){hideLoading();isSending=false;document.getElementById('report-send-btn').disabled=false;alert(e.message)}}
 
 function showLoading(m){document.getElementById('loading-text').textContent=m||'';var el=document.getElementById('loading-overlay');el.classList.remove('hidden');el.style.opacity='1'}
 function hideLoading(){document.getElementById('loading-overlay').classList.add('hidden')}
@@ -724,6 +778,149 @@ function showError(m){var el=document.getElementById('error-banner');el.textCont
 function esc(s){if(!s)return'';var d=document.createElement('div');d.textContent=String(s);return d.innerHTML}
 function fmtPhone(p){if(!p)return'';var s=String(p).replace(/[^0-9]/g,'');if(s&&s.charAt(0)!=='0')s='0'+s;return s}
 function phoneLink(p){var n=fmtPhone(p);if(!n)return'-';return'<a href="tel:'+n+'" style="color:#007aff;text-decoration:none;font-weight:500" onclick="event.stopPropagation()">'+esc(n)+'</a>'}
+
+// ===== 要望2B+3: 報告画面の localStorage 自動保存/復元 =====
+var _reportSaveTimer=null,_pendingDraftMeta=null,_suppressReportSave=false;
+function _reportLsPrefix(){if(!selectedVenue)return null;return'rpt_v2_'+selectedVenue.spreadsheetId+'_'+selectedVenue.sheetName+'_'}
+var _REPORT_LS_FIELDS=['_meta','staff','accident','other','fge','otReason','otDetail','teams','cancel','staff_list','checks'];
+function _scheduleReportSave(){if(_suppressReportSave)return;clearTimeout(_reportSaveTimer);_reportSaveTimer=setTimeout(_saveReportLocalStorage,300)}
+function _saveReportLocalStorage(){
+  if(_suppressReportSave)return;
+  if(!selectedVenue)return;
+  var p=_reportLsPrefix();if(!p)return;
+  try{
+    var get=function(id){var el=document.getElementById(id);return el?el.value:''};
+    var ls=localStorage;
+    ls.setItem(p+'staff',get('report-staff-name'));
+    ls.setItem(p+'accident',get('accident-report'));
+    ls.setItem(p+'other',get('other-report'));
+    ls.setItem(p+'fge',get('final-game-end-time'));
+    ls.setItem(p+'otReason',get('overtime-reason'));
+    ls.setItem(p+'otDetail',get('overtime-other-detail'));
+    var teamMap={};var cancelMap={};
+    (selectedVenue.blocks||[]).forEach(function(b,bi){
+      var c=document.getElementById('rpt-cancel-'+bi);if(c&&c.checked)cancelMap[bi]=true;
+      (b.teams||[]).forEach(function(t,ti){
+        var k=bi+'-'+ti;
+        teamMap[k]={teamName:t.teamName||'',teamRow:t.teamRow||0,
+          sales:get('rpt-sales-'+bi+'-'+ti),rank:get('rpt-rank-'+bi+'-'+ti),remarks:get('rpt-remarks-'+bi+'-'+ti)};
+      });
+    });
+    ls.setItem(p+'teams',JSON.stringify(teamMap));
+    ls.setItem(p+'cancel',JSON.stringify(cancelMap));
+    var staffList=[];
+    for(var i=0;i<13;i++){
+      staffList.push({name:get('sn-'+i),ci:get('sci-'+i),co:get('sco-'+i),br:get('sb-'+i),
+        nw:!!(document.getElementById('snw-'+i)||{}).checked});
+    }
+    ls.setItem(p+'staff_list',JSON.stringify(staffList));
+    var sa=selectedVenue.staffArea||{};var checks=[];
+    (sa.checkItems||[]).forEach(function(_,i){var el=document.getElementById('chk-'+i);checks.push(el?!!el.checked:false)});
+    ls.setItem(p+'checks',JSON.stringify(checks));
+    ls.setItem(p+'_meta',JSON.stringify({savedAt:new Date().toISOString(),sheetDate:(selectedVenue.dateStr||''),version:2}));
+  }catch(e){showToast('下書き保存失敗（容量オーバー）','error')}
+}
+function _restoreReportLocalStorage(){
+  if(!selectedVenue)return;
+  var p=_reportLsPrefix();if(!p)return;
+  var metaRaw=localStorage.getItem(p+'_meta');if(!metaRaw)return;
+  var meta=null;try{meta=JSON.parse(metaRaw)}catch(e){return}
+  if(!meta||!meta.savedAt)return;
+  // 今日の日付なら即時復元、それ以外はバナー表示（R5）
+  var savedDate=new Date(meta.savedAt);var today=new Date();
+  var sameDay=savedDate.getFullYear()===today.getFullYear()&&savedDate.getMonth()===today.getMonth()&&savedDate.getDate()===today.getDate();
+  if(sameDay){_applyDraftValues()}
+  else{_pendingDraftMeta=meta;_showDraftBanner(meta.savedAt)}
+}
+function _showDraftBanner(savedAtIso){
+  var el=document.getElementById('draft-banner');if(!el)return;
+  var msg=document.getElementById('draft-banner-msg');
+  var d=new Date(savedAtIso);
+  var txt=(d.getMonth()+1)+'月'+d.getDate()+'日 '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)+' に保存された下書きがあります。';
+  if(msg)msg.textContent=txt;
+  el.classList.remove('hidden');el.style.display='block';
+}
+function _hideDraftBanner(){var el=document.getElementById('draft-banner');if(el){el.classList.add('hidden');el.style.display='none'}_pendingDraftMeta=null}
+function _applyDraft(){_applyDraftValues();_hideDraftBanner()}
+function _discardDraft(){_clearReportLocalStorage();_hideDraftBanner();showToast('下書きを破棄しました')}
+function _applyDraftValues(){
+  if(!selectedVenue)return;
+  var p=_reportLsPrefix();if(!p)return;
+  var g=function(k){return localStorage.getItem(p+k)};
+  var set=function(id,v){var el=document.getElementById(id);if(el&&v!==null&&v!==undefined)el.value=v};
+  var s=g('staff');if(s!==null)set('report-staff-name',s);
+  var a=g('accident');if(a!==null)set('accident-report',a);
+  var o=g('other');if(o!==null)set('other-report',o);
+  var f=g('fge');if(f!==null)set('final-game-end-time',f);
+  var otR=g('otReason');if(otR!==null){set('overtime-reason',otR);onOvertimeReasonChange()}
+  var otD=g('otDetail');if(otD!==null)set('overtime-other-detail',otD);
+  // チーム復元（R6: teamName+teamRow 検証）
+  try{
+    var teamMap=JSON.parse(g('teams')||'{}');
+    (selectedVenue.blocks||[]).forEach(function(b,bi){
+      (b.teams||[]).forEach(function(t,ti){
+        var saved=teamMap[bi+'-'+ti];if(!saved)return;
+        if(saved.teamName!==t.teamName||saved.teamRow!==t.teamRow){
+          if(window.console)console.warn('[draft] skip mismatch bi='+bi+' ti='+ti+' saved='+saved.teamName+' current='+t.teamName);return;
+        }
+        set('rpt-sales-'+bi+'-'+ti,saved.sales||'');
+        set('rpt-rank-'+bi+'-'+ti,saved.rank||'');
+        set('rpt-remarks-'+bi+'-'+ti,saved.remarks||'');
+      });
+    });
+    var cancelMap=JSON.parse(g('cancel')||'{}');
+    Object.keys(cancelMap).forEach(function(bi){
+      var c=document.getElementById('rpt-cancel-'+bi);
+      if(c&&cancelMap[bi]){c.checked=true;onReportCancelToggle(bi)}
+    });
+    var staffList=JSON.parse(g('staff_list')||'[]');
+    staffList.forEach(function(sl,i){
+      if(!sl)return;
+      var sn=document.getElementById('sn-'+i);
+      if(sn&&sl.name){
+        var exists=false;for(var oi=0;oi<sn.options.length;oi++){if(sn.options[oi].value===sl.name){exists=true;break}}
+        if(!exists){var opt=document.createElement('option');opt.value=sl.name;opt.textContent=sl.name;sn.appendChild(opt)}
+        sn.value=sl.name;onStaffNameChange(i);
+      }
+      set('sci-'+i,sl.ci||'');set('sco-'+i,sl.co||'');set('sb-'+i,sl.br||'');
+      var nw=document.getElementById('snw-'+i);if(nw&&sl.nw!==undefined){nw.checked=!!sl.nw;if(sl.nw)onNormalWorkToggle(i)}
+    });
+    var checks=JSON.parse(g('checks')||'[]');
+    checks.forEach(function(v,i){var c=document.getElementById('chk-'+i);if(c)c.checked=!!v});
+  }catch(e){if(window.console)console.warn('[draft] restore error',e)}
+  checkOvertimeStatus();
+}
+function _clearReportLocalStorage(){
+  var p=_reportLsPrefix();if(!p)return;
+  _REPORT_LS_FIELDS.forEach(function(k){try{localStorage.removeItem(p+k)}catch(e){}});
+}
+function _cleanupOldDrafts(){
+  // 30日以上前の下書きキーを削除（R9）
+  try{
+    var now=Date.now();var THRESHOLD=30*24*60*60*1000;
+    var toRemove=[];
+    for(var i=0;i<localStorage.length;i++){
+      var key=localStorage.key(i);
+      if(!key||key.indexOf('rpt_v2_')!==0||key.indexOf('_meta',key.length-5)===-1)continue;
+      try{
+        var m=JSON.parse(localStorage.getItem(key)||'{}');
+        if(m.savedAt&&(now-new Date(m.savedAt).getTime())>THRESHOLD){
+          var base=key.slice(0,key.length-5); // _meta を外す
+          _REPORT_LS_FIELDS.forEach(function(s){toRemove.push(base+s)});
+        }
+      }catch(e){}
+    }
+    toRemove.forEach(function(k){try{localStorage.removeItem(k)}catch(e){}});
+  }catch(e){}
+}
+function _attachReportAutoSave(){
+  if(window._reportAutoSaveAttached)return;
+  window._reportAutoSaveAttached=true;
+  var s=document.getElementById('screen-report');if(!s)return;
+  s.addEventListener('input',_scheduleReportSave);
+  s.addEventListener('change',_scheduleReportSave);
+}
+document.addEventListener('DOMContentLoaded',function(){_attachReportAutoSave();_cleanupOldDrafts()});
 </script>
 </body>
 </html>

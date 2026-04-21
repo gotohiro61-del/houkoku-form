@@ -1,0 +1,9 @@
+# テスト関連
+node_modules/
+test-results/
+playwright-report/
+package-lock.json
+
+# 一時ファイル
+*.log
+.DS_Store

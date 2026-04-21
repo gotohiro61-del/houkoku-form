@@ -18,7 +18,7 @@ module.exports = {
     video: 'retain-on-failure',
     trace: 'retain-on-failure',
     // ローカルサーバー経由で index.html を配信
-    baseURL: 'http://localhost:8765',
+    baseURL: 'http://localhost:8765/',
   },
   projects: [
     {

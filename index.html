@@ -583,7 +583,7 @@ function goTeamList(){showScreen('screen-team-list')}
 function filterVenues(f){currentFilter=f;var btns=document.querySelectorAll('.date-btn');var labels=['unreported','yesterday','today','tomorrow','2daysafter'];btns.forEach(function(b,i){b.classList.toggle('active',labels[i]===f)});if(f==='unreported')loadUnreportedVenues();else renderVenueList()}
 
 // 大会終了予定時刻の計算（GAS側と同じロジック）
-var _MATCH_DURATION_TABLE={'ハーフ':{3:111,4:143,5:175,6:207,7:239,8:271},'4Q':{3:120,4:155,5:225},'3x3':{6:150}};
+var _MATCH_DURATION_TABLE={'ハーフ':{3:111,4:143,5:175,6:207,7:239,8:271},'4Q':{3:120,4:155,5:225},'3x3':{3:105,4:135,5:165,6:150}};
 function _feDetectMatchType(tn){var n=String(tn||'');if(n.indexOf('3x3')>=0)return'3x3';if(n.indexOf('4Q BATTLE')>=0)return'4Q';return'ハーフ'}
 function _feCalcDuration(tn,tc){var t=_feDetectMatchType(tn);var T=_MATCH_DURATION_TABLE[t]||{};return T[tc]||null}
 function _feAddMinutes(hhmm,min){if(!hhmm||!min)return'';var m=String(hhmm).match(/^(\d{1,2}):(\d{2})/);if(!m)return'';var t=parseInt(m[1],10)*60+parseInt(m[2],10)+parseInt(min,10);t=((t%(24*60))+24*60)%(24*60);return('0'+Math.floor(t/60)).slice(-2)+':'+('0'+(t%60)).slice(-2)}

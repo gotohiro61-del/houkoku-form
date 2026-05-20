@@ -557,12 +557,171 @@ body{
   </div>
 </div>
 
+<!-- ===== PIN認証ゲート ===== -->
+<div id="pin-gate" class="hidden" style="position:fixed;top:0;left:0;right:0;bottom:0;background:#f5f5f7;z-index:99999;display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px;">
+  <div style="max-width:340px;width:100%;text-align:center">
+    <div style="font-size:44px;margin-bottom:14px">&#x1F510;</div>
+    <div style="font-size:22px;font-weight:700;color:#1d1d1f;margin-bottom:6px;letter-spacing:-.02em">PINを入力</div>
+    <div style="font-size:13px;color:#86868b;margin-bottom:24px;line-height:1.5">LINEで届いた4桁のPINを入力してください</div>
+    <div id="pin-inputs" style="display:flex;gap:10px;justify-content:center;margin-bottom:14px">
+      <input type="tel" maxlength="1" id="pin-d0" pattern="[0-9]" inputmode="numeric" autocomplete="off" style="width:54px;height:64px;border:2px solid #d2d2d7;border-radius:12px;text-align:center;font-size:28px;font-weight:600;background:#fff;color:#1d1d1f;-webkit-text-security:disc;text-security:disc">
+      <input type="tel" maxlength="1" id="pin-d1" pattern="[0-9]" inputmode="numeric" autocomplete="off" style="width:54px;height:64px;border:2px solid #d2d2d7;border-radius:12px;text-align:center;font-size:28px;font-weight:600;background:#fff;color:#1d1d1f;-webkit-text-security:disc;text-security:disc">
+      <input type="tel" maxlength="1" id="pin-d2" pattern="[0-9]" inputmode="numeric" autocomplete="off" style="width:54px;height:64px;border:2px solid #d2d2d7;border-radius:12px;text-align:center;font-size:28px;font-weight:600;background:#fff;color:#1d1d1f;-webkit-text-security:disc;text-security:disc">
+      <input type="tel" maxlength="1" id="pin-d3" pattern="[0-9]" inputmode="numeric" autocomplete="off" style="width:54px;height:64px;border:2px solid #d2d2d7;border-radius:12px;text-align:center;font-size:28px;font-weight:600;background:#fff;color:#1d1d1f;-webkit-text-security:disc;text-security:disc">
+    </div>
+    <div id="pin-error" style="min-height:20px;font-size:13px;color:#ff3b30;font-weight:500;margin-bottom:10px"></div>
+    <button id="pin-submit" onclick="pinGateSubmit()" style="width:100%;padding:14px;background:#007aff;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;letter-spacing:-.01em">確認</button>
+    <div style="font-size:12px;color:#86868b;margin-top:22px;line-height:1.7">
+      PINを忘れた場合<br>LINEグループの過去通知をご確認ください
+    </div>
+  </div>
+</div>
+
 <script>
 const API_URL='https://script.google.com/macros/s/AKfycbzejwlaQBa4v1sWbDhWhiSHDt3ydAhyydu_3sLqFTVYaP2PY3de4fVxCfA1JNVgYOSX/exec';
+
+// ===== PIN認証モジュール（最先頭でfetchをパッチ） =====
+(function(){
+  var LS_DEVICE='pinAuth_deviceId',LS_TOKEN='pinAuth_token',LS_PINVER='pinAuth_pinVersion',LS_EXP='pinAuth_expiresAt';
+  function ensureDeviceId(){
+    try{
+      var id=localStorage.getItem(LS_DEVICE);if(id)return id;
+      if(window.crypto&&crypto.randomUUID)id=crypto.randomUUID();
+      else id='dev_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,10);
+      localStorage.setItem(LS_DEVICE,id);return id;
+    }catch(e){
+      window._memDeviceId=window._memDeviceId||('dev_'+Date.now()+'_'+Math.random().toString(36).slice(2,10));
+      return window._memDeviceId;
+    }
+  }
+  function getAuth(){
+    try{
+      var t=localStorage.getItem(LS_TOKEN),v=localStorage.getItem(LS_PINVER);
+      var ex=parseInt(localStorage.getItem(LS_EXP)||'0',10);
+      if(t&&v&&(!ex||Date.now()<ex)){return{deviceId:ensureDeviceId(),token:t,pinVersion:v}}
+    }catch(e){}
+    return null;
+  }
+  function storeAuth(token,pinVersion,expiresAt){
+    try{
+      localStorage.setItem(LS_TOKEN,token);localStorage.setItem(LS_PINVER,String(pinVersion));
+      localStorage.setItem(LS_EXP,String(expiresAt||(Date.now()+7*24*60*60*1000)));
+    }catch(e){}
+  }
+  function clearAuth(){
+    try{localStorage.removeItem(LS_TOKEN);localStorage.removeItem(LS_PINVER);localStorage.removeItem(LS_EXP)}catch(e){}
+  }
+  var _origFetch=window.fetch.bind(window);
+  window.fetch=function(input,init){
+    var url=(typeof input==='string')?input:(input&&input.url);
+    if(!url||url.indexOf(API_URL)!==0)return _origFetch(input,init);
+    var auth=getAuth();
+    var devId=auth?auth.deviceId:ensureDeviceId();
+    var token=auth?auth.token:'';
+    var ver=auth?auth.pinVersion:'';
+    var newInput=input,newInit=init;
+    var isPost=init&&init.method&&String(init.method).toUpperCase()==='POST';
+    if(!isPost){
+      var sep=url.indexOf('?')>=0?'&':'?';
+      newInput=url+sep+'_d='+encodeURIComponent(devId)+'&_t='+encodeURIComponent(token)+'&_v='+encodeURIComponent(ver);
+    }else if(init.body){
+      try{
+        var body=JSON.parse(init.body);
+        if(body&&body.action!=='verifyPin'){
+          body._d=devId;body._t=token;body._v=ver;
+          newInit=Object.assign({},init,{body:JSON.stringify(body)});
+        }
+      }catch(e){}
+    }
+    return _origFetch(newInput,newInit).then(function(res){
+      return res.clone().json().then(function(data){
+        if(data&&(data.error==='AUTH_REQUIRED'||data.code==='AUTH_REQUIRED')){
+          clearAuth();PIN_AUTH.showPinGate();
+          var err=new Error('AUTH_REQUIRED');err.code='AUTH_REQUIRED';throw err;
+        }
+        return res;
+      },function(){return res});
+    });
+  };
+  function showPinGate(){
+    var el=document.getElementById('pin-gate');
+    if(el){el.classList.remove('hidden');el.style.display='flex';
+      setTimeout(function(){var f=document.getElementById('pin-d0');if(f)f.focus()},80);
+    }
+  }
+  function hidePinGate(){
+    var el=document.getElementById('pin-gate');
+    if(el){el.classList.add('hidden');el.style.display='none'}
+  }
+  window.PIN_AUTH={
+    ensureDeviceId:ensureDeviceId,getAuth:getAuth,storeAuth:storeAuth,clearAuth:clearAuth,
+    showPinGate:showPinGate,hidePinGate:hidePinGate,
+    submitPin:async function(pin){
+      var devId=ensureDeviceId();
+      try{
+        var r=await _origFetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'verifyPin',pin:pin,deviceId:devId})});
+        var d=await r.json();
+        if(d&&d.ok){storeAuth(d.token,d.pinVersion,d.expiresAt);hidePinGate();
+          if(typeof window._afterPinAuth==='function')window._afterPinAuth();
+          return{ok:true};
+        }
+        return{ok:false,error:(d&&d.error)||'UNKNOWN'};
+      }catch(e){return{ok:false,error:'NETWORK'}}
+    },
+  };
+})();
+
+function pinGateInit(){
+  var inputs=[0,1,2,3].map(function(i){return document.getElementById('pin-d'+i)});
+  inputs.forEach(function(inp,i){
+    if(!inp)return;
+    inp.addEventListener('input',function(){
+      var v=(inp.value||'').replace(/\D/g,'').slice(0,1);inp.value=v;
+      if(v&&i<3)inputs[i+1].focus();
+      if(i===3&&v){var pin=inputs.map(function(x){return x.value}).join('');if(/^\d{4}$/.test(pin))pinGateSubmit()}
+    });
+    inp.addEventListener('keydown',function(e){
+      if(e.key==='Backspace'&&!inp.value&&i>0)inputs[i-1].focus();
+    });
+    inp.addEventListener('paste',function(e){
+      e.preventDefault();
+      var data=(e.clipboardData||window.clipboardData).getData('text');
+      var digits=(data||'').replace(/\D/g,'').slice(0,4);
+      for(var k=0;k<4;k++)inputs[k].value=digits[k]||'';
+      if(digits.length===4)pinGateSubmit();
+      else if(digits.length>0)inputs[Math.min(digits.length,3)].focus();
+    });
+  });
+}
+async function pinGateSubmit(){
+  var inputs=[0,1,2,3].map(function(i){return document.getElementById('pin-d'+i).value});
+  var pin=inputs.join('');
+  var errEl=document.getElementById('pin-error');
+  if(!/^\d{4}$/.test(pin)){errEl.textContent='4桁の数字を入力してください';return}
+  errEl.textContent='';
+  var btn=document.getElementById('pin-submit');btn.disabled=true;btn.textContent='確認中...';
+  var res=await PIN_AUTH.submitPin(pin);
+  if(res.ok)return;
+  btn.disabled=false;btn.textContent='確認';
+  if(res.error==='RATE_LIMITED')errEl.textContent='入力回数が多すぎます。10分ほど待ってから再試行してください';
+  else if(res.error==='INVALID_PIN')errEl.textContent='PINが正しくありません';
+  else if(res.error==='INVALID_PIN_FORMAT')errEl.textContent='4桁の数字を入力してください';
+  else if(res.error==='NOT_INITIALIZED')errEl.textContent='システム未初期化です。管理者にご連絡ください';
+  else if(res.error==='NETWORK')errEl.textContent='通信エラー。電波の良い場所で再試行してください';
+  else errEl.textContent='エラー: '+res.error;
+  for(var k=0;k<4;k++)document.getElementById('pin-d'+k).value='';
+  document.getElementById('pin-d0').focus();
+}
+document.addEventListener('DOMContentLoaded',pinGateInit);
+
 const LS_STAFF='dashboard_staff',LS_SK_STAFF='sokketsu_staff';
 let venueData=null,selectedVenue=null,selectedVenueIndex=-1,selectedBlockIndex=-1,selectedTeamIndex=-1,currentFilter='today',currentHistoryFilter='today',isSending=false,skSlotCount=1,historyItems=[],_reportBuildKey=null;
 
-document.addEventListener('DOMContentLoaded',loadData);
+window._afterPinAuth=loadData;
+document.addEventListener('DOMContentLoaded',function(){
+  if(PIN_AUTH.getAuth())loadData();
+  else PIN_AUTH.showPinGate();
+});
 
 function migrateReceptionFields(data){(data.venues||[]).forEach(function(v){(v.blocks||[]).forEach(function(b){(b.teams||[]).forEach(function(t){if(t.receptionStatus===undefined){if(t.receptionChecked===true||t.receptionChecked==='TRUE')t.receptionStatus='checked';else t.receptionStatus=''}})})})}
 async function loadData(){_reportBuildKey=null;showLoading('読み込み中');try{var r=await fetch(API_URL+'?action=getVenueReport');var d=await r.json();if(d.error){showError(d.error);return}migrateReceptionFields(d);venueData=d;document.getElementById('today-display').textContent=d.todayDisplay||'';renderVenueList()}catch(e){showError('取得失敗: '+e.message)}finally{hideLoading()}loadClosingList()}

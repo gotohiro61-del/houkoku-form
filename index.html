@@ -1302,12 +1302,17 @@ document.addEventListener('DOMContentLoaded',function(){_attachReportAutoSave();
     var c=window.collectEquipmentReport();
     var reds=[],yellows=[];
     for(var i=0;i<c.items.length;i++){if(c.items[i].status==='red')reds.push(c.items[i]);else if(c.items[i].status==='yellow')yellows.push(c.items[i])}
+    var un=c.total-c.judged;
     var h='<div class="confirm-section"><div class="confirm-section-title">備品報告</div>';
+    // ソフト警告: 未判定があれば目立つ注意を出すが、送信は止めない
+    if(un>0){
+      var msg=(c.judged===0)?('備品が未報告です（'+c.total+'品目すべて未判定）'):('未判定が'+un+'品目あります');
+      h+='<div style="background:#fff3e0;border:1px solid #f3d9a8;border-radius:8px;padding:9px 11px;margin-bottom:8px;color:#b9770f;font-size:13px;font-weight:700">'+msg+'<div style="font-weight:400;font-size:11.5px;margin-top:3px;color:#9a6a16">問題なければこのまま送信できます。</div></div>';
+    }
     function line(x){return escE(x.category)+'：'+escE(x.item)+(x.comment?'（'+escE(x.comment)+'）':'')}
     for(var a=0;a<reds.length;a++)h+='<div class="confirm-item" style="color:#ff3b30">なし・破損: '+line(reds[a])+'</div>';
     for(var b=0;b<yellows.length;b++)h+='<div class="confirm-item" style="color:#b9770f">要補充: '+line(yellows[b])+'</div>';
-    if(!reds.length&&!yellows.length)h+='<div class="confirm-item">すべて余裕'+(c.judged<c.total?'（判定 '+c.judged+'/'+c.total+'）':'（'+c.total+'品目）')+'</div>';
-    var un=c.total-c.judged;if(un>0)h+='<div class="confirm-item" style="color:#ff9500">未判定 '+un+'品目</div>';
+    if(!reds.length&&!yellows.length&&un===0)h+='<div class="confirm-item">すべて余裕（'+c.total+'品目）</div>';
     h+='</div>';return h;
   };
 

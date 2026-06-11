@@ -534,6 +534,15 @@ body{
       <div class="form-group hidden" id="overtime-other-detail-group"><label>詳細 <span class="req">*</span></label><textarea id="overtime-other-detail" placeholder="具体的な状況を記載してください" style="min-height:100px"></textarea></div>
     </div></div>
     <div class="section"><div class="section-inner">
+      <div class="section-title">備品報告 <span style="font-size:11px;color:#86868b;font-weight:400">あと3大会もつかで判定</span></div>
+      <div class="eq-legend">
+        <span class="eq-b eq-b-g">余裕</span><span class="eq-lt">3大会分ある</span>
+        <span class="eq-b eq-b-y">そろそろ</span><span class="eq-lt">補充準備</span>
+        <span class="eq-b eq-b-r">なし・破損</span><span class="eq-lt">要対応</span>
+      </div>
+      <div id="equipment-report-area"><p class="empty-state">読み込み中...</p></div>
+    </div></div>
+    <div class="section"><div class="section-inner">
       <div class="section-title">現場報告</div>
       <div class="form-group"><label>アクシデント</label><textarea id="accident-report" placeholder="事故・怪我・トラブル" style="min-height:200px"></textarea></div>
       <div class="form-group"><label>その他</label><textarea id="other-report" placeholder="連絡事項" style="min-height:200px"></textarea></div>
@@ -995,10 +1004,10 @@ function onNormalWorkToggle(idx){var cb=document.getElementById('snw-'+idx);var 
 function applyAllNormal(){for(var i=0;i<13;i++){var sel=document.getElementById('sn-'+i);if(sel&&sel.value.trim()){document.getElementById('snw-'+i).checked=true;onNormalWorkToggle(i);document.getElementById('sr-'+i).classList.remove('collapsed')}}checkOvertimeStatus()}
 function renderCheckItems(){var sa=selectedVenue.staffArea||{};var items=sa.checkItems||[];var area=document.getElementById('check-items-area');if(!items.length){area.innerHTML='<p class="empty-state">チェック項目なし</p>';return}area.innerHTML=items.map(function(item,i){return'<div class="check-item"><input type="checkbox" id="chk-'+i+'" '+(item.checked?'checked':'')+'><label for="chk-'+i+'">'+esc(item.text)+'</label></div>'}).join('')}
 
-function showReportConfirm(){if(isSending)return;var sn=document.getElementById('report-staff-name').value.trim();if(!sn){alert('報告者名を入力');document.getElementById('report-staff-name').focus();return}localStorage.setItem(LS_STAFF,sn);var errors=[];var blocks=selectedVenue.blocks||[];blocks.forEach(function(b,bi){if(document.getElementById('rpt-cancel-'+bi).checked)return;(b.teams||[]).forEach(function(t,ti){if(!document.getElementById('rpt-sales-'+bi+'-'+ti).value)errors.push(t.teamName+' 営業未選択')})});var sa=selectedVenue.staffArea||{};var ci=sa.checkItems||[];var uc=0;ci.forEach(function(item,i){if(!document.getElementById('chk-'+i).checked)uc++});if(uc)errors.push(uc+'件未チェック');var fge=document.getElementById('final-game-end-time').value;if(!fge)errors.push('最終試合終了時刻 未入力');var otSect=document.getElementById('overtime-section');if(otSect&&!otSect.classList.contains('hidden')){var otR=document.getElementById('overtime-reason').value;if(!otR)errors.push('延長理由 未選択');else if(otR==='その他'&&!document.getElementById('overtime-other-detail').value.trim())errors.push('延長理由(その他)の詳細 未入力')}if(errors.length){alert(errors.join('\n'));return}var h='<div class="confirm-section"><div class="confirm-section-title">報告者</div><div class="confirm-item">'+esc(sn)+'</div></div>';blocks.forEach(function(b,bi){var tl=(b.teams||[]).map(function(t,ti){var s=document.getElementById('rpt-sales-'+bi+'-'+ti).value;var r=document.getElementById('rpt-rank-'+bi+'-'+ti).value;return'<div class="confirm-item">'+esc(t.teamName)+' '+esc(s)+' '+esc(r)+'</div>'}).join('');h+='<div class="confirm-section"><div class="confirm-section-title">'+esc(b.tournamentName||'')+'</div>'+tl+'</div>'});var staffH='';var staffCount=0;for(var i=0;i<13;i++){var nm=document.getElementById('sn-'+i).value.trim();if(nm){staffCount++;var ci=document.getElementById('sci-'+i).value||'-';var co=document.getElementById('sco-'+i).value||'-';var br=document.getElementById('sb-'+i).value||'0';staffH+='<div class="confirm-item">'+esc(nm)+' '+esc(ci)+'〜'+esc(co)+' (休憩'+esc(br)+'分)</div>'}}if(staffCount){h+='<div class="confirm-section"><div class="confirm-section-title">スタッフ勤務 ('+staffCount+'名)</div>'+staffH+'</div>'}var acc=document.getElementById('accident-report').value.trim();var oth=document.getElementById('other-report').value.trim();if(acc||oth){h+='<div class="confirm-section"><div class="confirm-section-title">現場報告</div>';if(acc)h+='<div class="confirm-item" style="color:#ff3b30">⚠ '+esc(acc)+'</div>';if(oth)h+='<div class="confirm-item">'+esc(oth)+'</div>';h+='</div>'}var fgeVal=document.getElementById('final-game-end-time').value;if(fgeVal)h+='<div class="confirm-section"><div class="confirm-section-title">最終試合終了時刻</div><div class="confirm-item">'+esc(fgeVal)+'</div></div>';var otVisible=!document.getElementById('overtime-section').classList.contains('hidden');var otReasonVal=document.getElementById('overtime-reason').value;var otDetailVal=document.getElementById('overtime-other-detail').value.trim();var otDisplay=otReasonVal==='その他'&&otDetailVal?otReasonVal+': '+otDetailVal:otReasonVal;if(otVisible&&otReasonVal)h+='<div class="confirm-section"><div class="confirm-section-title">延長理由</div><div class="confirm-item">'+esc(otDisplay)+'</div></div>';document.getElementById('report-confirm-body').innerHTML=h;document.getElementById('report-confirm-overlay').classList.add('show')}
+function showReportConfirm(){if(isSending)return;var sn=document.getElementById('report-staff-name').value.trim();if(!sn){alert('報告者名を入力');document.getElementById('report-staff-name').focus();return}localStorage.setItem(LS_STAFF,sn);var errors=[];var blocks=selectedVenue.blocks||[];blocks.forEach(function(b,bi){if(document.getElementById('rpt-cancel-'+bi).checked)return;(b.teams||[]).forEach(function(t,ti){if(!document.getElementById('rpt-sales-'+bi+'-'+ti).value)errors.push(t.teamName+' 営業未選択')})});var sa=selectedVenue.staffArea||{};var ci=sa.checkItems||[];var uc=0;ci.forEach(function(item,i){if(!document.getElementById('chk-'+i).checked)uc++});if(uc)errors.push(uc+'件未チェック');var fge=document.getElementById('final-game-end-time').value;if(!fge)errors.push('最終試合終了時刻 未入力');var otSect=document.getElementById('overtime-section');if(otSect&&!otSect.classList.contains('hidden')){var otR=document.getElementById('overtime-reason').value;if(!otR)errors.push('延長理由 未選択');else if(otR==='その他'&&!document.getElementById('overtime-other-detail').value.trim())errors.push('延長理由(その他)の詳細 未入力')}if(errors.length){alert(errors.join('\n'));return}var h='<div class="confirm-section"><div class="confirm-section-title">報告者</div><div class="confirm-item">'+esc(sn)+'</div></div>';blocks.forEach(function(b,bi){var tl=(b.teams||[]).map(function(t,ti){var s=document.getElementById('rpt-sales-'+bi+'-'+ti).value;var r=document.getElementById('rpt-rank-'+bi+'-'+ti).value;return'<div class="confirm-item">'+esc(t.teamName)+' '+esc(s)+' '+esc(r)+'</div>'}).join('');h+='<div class="confirm-section"><div class="confirm-section-title">'+esc(b.tournamentName||'')+'</div>'+tl+'</div>'});var staffH='';var staffCount=0;for(var i=0;i<13;i++){var nm=document.getElementById('sn-'+i).value.trim();if(nm){staffCount++;var ci=document.getElementById('sci-'+i).value||'-';var co=document.getElementById('sco-'+i).value||'-';var br=document.getElementById('sb-'+i).value||'0';staffH+='<div class="confirm-item">'+esc(nm)+' '+esc(ci)+'〜'+esc(co)+' (休憩'+esc(br)+'分)</div>'}}if(staffCount){h+='<div class="confirm-section"><div class="confirm-section-title">スタッフ勤務 ('+staffCount+'名)</div>'+staffH+'</div>'}var acc=document.getElementById('accident-report').value.trim();var oth=document.getElementById('other-report').value.trim();if(acc||oth){h+='<div class="confirm-section"><div class="confirm-section-title">現場報告</div>';if(acc)h+='<div class="confirm-item" style="color:#ff3b30">⚠ '+esc(acc)+'</div>';if(oth)h+='<div class="confirm-item">'+esc(oth)+'</div>';h+='</div>'}var fgeVal=document.getElementById('final-game-end-time').value;if(fgeVal)h+='<div class="confirm-section"><div class="confirm-section-title">最終試合終了時刻</div><div class="confirm-item">'+esc(fgeVal)+'</div></div>';var otVisible=!document.getElementById('overtime-section').classList.contains('hidden');var otReasonVal=document.getElementById('overtime-reason').value;var otDetailVal=document.getElementById('overtime-other-detail').value.trim();var otDisplay=otReasonVal==='その他'&&otDetailVal?otReasonVal+': '+otDetailVal:otReasonVal;if(otVisible&&otReasonVal)h+='<div class="confirm-section"><div class="confirm-section-title">延長理由</div><div class="confirm-item">'+esc(otDisplay)+'</div></div>';if(window.buildEquipmentConfirm)h+=window.buildEquipmentConfirm();document.getElementById('report-confirm-body').innerHTML=h;document.getElementById('report-confirm-overlay').classList.add('show')}
 function closeReportConfirm(){document.getElementById('report-confirm-overlay').classList.remove('show')}
 
-async function doSubmitReport(){if(isSending)return;isSending=true;document.getElementById('report-send-btn').disabled=true;closeReportConfirm();showLoading('送信中');var blocks=selectedVenue.blocks||[];var teams=[];blocks.forEach(function(b,bi){(b.teams||[]).forEach(function(t,ti){teams.push({teamRow:t.teamRow,salesActivity:document.getElementById('rpt-sales-'+bi+'-'+ti).value,rank:document.getElementById('rpt-rank-'+bi+'-'+ti).value,remarks:document.getElementById('rpt-remarks-'+bi+'-'+ti).value,rentalInput:t.rentalInput||'',remittance:t.remittance||'',paymentMethod:t.paymentMethod||''})})});var staffList=[];var sa=selectedVenue.staffArea||{};var slots=sa.staff||[];for(var i=0;i<13;i++){var name=document.getElementById('sn-'+i).value.trim();var row=(slots[i]&&slots[i].row)?slots[i].row:(390+i);staffList.push({row:row,name:name,checkIn:document.getElementById('sci-'+i).value,checkOut:document.getElementById('sco-'+i).value,breakMin:parseInt(document.getElementById('sb-'+i).value)||0,normalWork:document.getElementById('snw-'+i).checked})}var checkItems=(sa.checkItems||[]).map(function(item,i){return{row:item.row,checked:document.getElementById('chk-'+i).checked}});var otSectVisible=!document.getElementById('overtime-section').classList.contains('hidden');var otR=document.getElementById('overtime-reason').value||'';var otD=document.getElementById('overtime-other-detail').value.trim();var overtimeReasonSend=otSectVisible?(otR==='その他'&&otD?otR+': '+otD:otR):'';var payload={action:'submitReport',staffName:document.getElementById('report-staff-name').value.trim(),spreadsheetId:selectedVenue.spreadsheetId,sheetName:selectedVenue.sheetName,teams:teams,staffList:staffList,accidentReport:document.getElementById('accident-report').value.trim(),otherReport:document.getElementById('other-report').value.trim(),checkItems:checkItems,finalGameEndTime:document.getElementById('final-game-end-time').value||'',overtimeReason:overtimeReasonSend,markComplete:true};try{var r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});var res=await r.json();hideLoading();isSending=false;document.getElementById('done-title').textContent='報告完了';document.getElementById('done-subtitle').textContent=selectedVenue.sheetName;var ee=document.getElementById('done-error');if(res.error){ee.textContent=res.error;ee.classList.remove('hidden');showScreen('screen-done')}else{ee.classList.add('hidden');_suppressReportSave=true;showScreen('screen-done');_reportBuildKey=null;_clearReportLocalStorage&&_clearReportLocalStorage();_suppressReportSave=false}}catch(e){hideLoading();isSending=false;document.getElementById('report-send-btn').disabled=false;alert(e.message)}}
+async function doSubmitReport(){if(isSending)return;isSending=true;document.getElementById('report-send-btn').disabled=true;closeReportConfirm();showLoading('送信中');var blocks=selectedVenue.blocks||[];var teams=[];blocks.forEach(function(b,bi){(b.teams||[]).forEach(function(t,ti){teams.push({teamRow:t.teamRow,salesActivity:document.getElementById('rpt-sales-'+bi+'-'+ti).value,rank:document.getElementById('rpt-rank-'+bi+'-'+ti).value,remarks:document.getElementById('rpt-remarks-'+bi+'-'+ti).value,rentalInput:t.rentalInput||'',remittance:t.remittance||'',paymentMethod:t.paymentMethod||''})})});var staffList=[];var sa=selectedVenue.staffArea||{};var slots=sa.staff||[];for(var i=0;i<13;i++){var name=document.getElementById('sn-'+i).value.trim();var row=(slots[i]&&slots[i].row)?slots[i].row:(390+i);staffList.push({row:row,name:name,checkIn:document.getElementById('sci-'+i).value,checkOut:document.getElementById('sco-'+i).value,breakMin:parseInt(document.getElementById('sb-'+i).value)||0,normalWork:document.getElementById('snw-'+i).checked})}var checkItems=(sa.checkItems||[]).map(function(item,i){return{row:item.row,checked:document.getElementById('chk-'+i).checked}});var otSectVisible=!document.getElementById('overtime-section').classList.contains('hidden');var otR=document.getElementById('overtime-reason').value||'';var otD=document.getElementById('overtime-other-detail').value.trim();var overtimeReasonSend=otSectVisible?(otR==='その他'&&otD?otR+': '+otD:otR):'';var payload={action:'submitReport',staffName:document.getElementById('report-staff-name').value.trim(),spreadsheetId:selectedVenue.spreadsheetId,sheetName:selectedVenue.sheetName,teams:teams,staffList:staffList,accidentReport:document.getElementById('accident-report').value.trim(),otherReport:document.getElementById('other-report').value.trim(),checkItems:checkItems,finalGameEndTime:document.getElementById('final-game-end-time').value||'',overtimeReason:overtimeReasonSend,equipmentReport:(window.collectEquipmentReport?window.collectEquipmentReport():null),markComplete:true};try{var r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});var res=await r.json();hideLoading();isSending=false;document.getElementById('done-title').textContent='報告完了';document.getElementById('done-subtitle').textContent=selectedVenue.sheetName;var ee=document.getElementById('done-error');if(res.error){ee.textContent=res.error;ee.classList.remove('hidden');showScreen('screen-done')}else{ee.classList.add('hidden');_suppressReportSave=true;showScreen('screen-done');_reportBuildKey=null;_clearReportLocalStorage&&_clearReportLocalStorage();_suppressReportSave=false}}catch(e){hideLoading();isSending=false;document.getElementById('report-send-btn').disabled=false;alert(e.message)}}
 
 function showLoading(m){document.getElementById('loading-text').textContent=m||'';var el=document.getElementById('loading-overlay');el.classList.remove('hidden');el.style.opacity='1'}
 function hideLoading(){document.getElementById('loading-overlay').classList.add('hidden')}
@@ -1010,7 +1019,7 @@ function phoneLink(p){var n=fmtPhone(p);if(!n)return'-';return'<a href="tel:'+n+
 // ===== 要望2B+3: 報告画面の localStorage 自動保存/復元 =====
 var _reportSaveTimer=null,_pendingDraftMeta=null,_suppressReportSave=false;
 function _reportLsPrefix(){if(!selectedVenue)return null;return'rpt_v2_'+selectedVenue.spreadsheetId+'_'+selectedVenue.sheetName+'_'}
-var _REPORT_LS_FIELDS=['_meta','staff','accident','other','fge','otReason','otDetail','teams','cancel','staff_list','checks'];
+var _REPORT_LS_FIELDS=['_meta','staff','accident','other','fge','otReason','otDetail','teams','cancel','staff_list','checks','equipment'];
 function _scheduleReportSave(){if(_suppressReportSave)return;clearTimeout(_reportSaveTimer);_reportSaveTimer=setTimeout(_saveReportLocalStorage,300)}
 function _saveReportLocalStorage(){
   if(_suppressReportSave)return;
@@ -1149,6 +1158,162 @@ function _attachReportAutoSave(){
   s.addEventListener('change',_scheduleReportSave);
 }
 document.addEventListener('DOMContentLoaded',function(){_attachReportAutoSave();_cleanupOldDrafts()});
+</script>
+<!-- ===== 備品報告（3大会基準） ===== -->
+<style>
+.eq-legend{display:flex;flex-wrap:wrap;align-items:center;gap:5px 10px;margin-bottom:10px;font-size:12px;color:#86868b}
+.eq-b{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px}
+.eq-b-g{background:#e7f6ec;color:#1e7e34}.eq-b-y{background:#fff3e0;color:#b9770f}.eq-b-r{background:#fdecea;color:#d3382c}
+.eq-lt{margin-right:4px}
+.eq-cat{border-bottom:1px solid #eef0f3}.eq-cat:last-child{border-bottom:none}
+.eq-head{display:flex;align-items:center;gap:8px;padding:13px 2px;cursor:pointer}
+.eq-nm{flex:1;font-size:15px;font-weight:600;color:#1d1d1f}.eq-nm small{color:#aaa;font-weight:400;font-size:11px}
+.eq-help{width:22px;height:22px;border-radius:50%;border:1.5px solid #c7d2e0;background:#fff;color:#007aff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.eq-stat{font-size:11.5px;font-weight:700;padding:4px 9px;border-radius:20px;white-space:nowrap}
+.eq-stat.done{background:#e7f6ec;color:#1e7e34}.eq-stat.todo{background:#f1f3f5;color:#98a2ad}.eq-stat.part{background:#e8f0fe;color:#1a4fa0}.eq-stat.warn{background:#fff3e0;color:#b9770f}.eq-stat.ng{background:#fdecea;color:#d3382c}
+.eq-arw{color:#c2c9d2;font-size:12px;width:14px;transition:transform .2s}.eq-cat.open .eq-arw{transform:rotate(180deg)}
+.eq-body{display:none;padding:0 0 12px 2px}.eq-cat.open .eq-body{display:block}
+.eq-bulk{text-align:right;margin:0 0 8px}
+.eq-bulk button{background:#fff;color:#1e7e34;border:1.5px solid #b6e6c4;border-radius:9px;padding:7px 12px;font-size:12px;font-weight:700;font-family:inherit}
+.eq-item{padding:10px 0;border-bottom:1px dashed #ebeef2}.eq-item:last-child{border-bottom:none}
+.eq-iname{font-size:14px;font-weight:600;color:#1d1d1f;margin-bottom:7px}.eq-iname small{color:#aaa;font-size:11px;font-weight:400;margin-left:4px}
+.eq-seg{display:flex;gap:6px}
+.eq-seg button{flex:1;border:2px solid #e0e0e0;background:#fafafa;border-radius:10px;padding:9px 2px;font-size:12.5px;font-weight:700;font-family:inherit;color:#8a929c;line-height:1.2}
+.eq-seg button small{display:block;font-size:9.5px;font-weight:600;opacity:.85;margin-top:1px}
+.eq-seg button.sel.g{background:#34a853;border-color:#34a853;color:#fff}
+.eq-seg button.sel.y{background:#f5a623;border-color:#f5a623;color:#fff}
+.eq-seg button.sel.r{background:#ea4335;border-color:#ea4335;color:#fff}
+.eq-memo{display:none;width:100%;margin-top:8px;border:2px solid #f0c89a;border-radius:10px;padding:10px;font-size:16px;font-family:inherit;background:#fff;color:#444;resize:vertical}
+.eq-item.show-memo .eq-memo{display:block}
+.eq-ov{position:fixed;inset:0;background:rgba(20,30,50,.55);display:none;align-items:center;justify-content:center;padding:24px;z-index:9999}
+.eq-ov.show{display:flex}
+.eq-modal{background:#fff;border-radius:16px;max-width:360px;width:100%;max-height:86vh;overflow-y:auto;padding:20px}
+.eq-modal h3{font-size:16px;color:#007aff;margin:0 0 4px}
+.eq-crit{margin:12px 0 0;padding:0}
+.eq-crit li{list-style:none;font-size:14px;color:#444;padding:9px 0 9px 22px;position:relative;border-bottom:1px solid #f0f2f5;line-height:1.5}
+.eq-crit li:before{content:"";position:absolute;left:2px;top:14px;width:8px;height:8px;border-radius:50%;background:#34a853}
+.eq-photo{display:none;margin-top:14px}.eq-photo.show{display:block}
+.eq-pcap{font-size:12px;font-weight:700;color:#b9770f;margin-bottom:6px}
+.eq-pimg{background:#f7f9fc;border:1.5px solid #e3e9f1;border-radius:11px;padding:8px;text-align:center}
+.eq-pimg img{max-width:100%;border-radius:8px;display:block;margin:0 auto}
+.eq-pnote{font-size:11px;color:#98a2ad;margin-top:6px;line-height:1.5}
+.eq-close{margin-top:16px;width:100%;background:#eef1f5;color:#555;border:none;border-radius:11px;padding:13px;font-size:15px;font-weight:700;font-family:inherit}
+</style>
+<script>
+(function(){
+  // チェックリストCSV由来：大項目→品目。help.crit/photo は将来「基準マスタ」シート化想定。
+  var EQ_DATA=[
+    {name:'ボール',help:{crit:['ボールの質の状態（傷・劣化）','ワックスはかけたか','空気圧は抜けていないか'],photo:'img/ball_worn.png'},items:[{n:'ボール',q:'×6'}]},
+    {name:'バナー・ドラム・景品',help:{crit:['破れ・色あせがないか','持ち帰り忘れがないか']},items:[{n:'スポンサーバナー',q:'×1'},{n:'B-BOOKSバナー',q:'×1'},{n:'ドラム',q:'×1'},{n:'景品',q:'×1'}]},
+    {name:'音響・タイマー',help:{crit:['電源が入り音が出るか','タイマーが正しく動くか','電源コード等の付属品が揃っているか']},items:[{n:'音響',q:'＋電源コード'},{n:'タイマー',q:'＋電源コード'},{n:'ファウルカウンター',q:'×2'}]},
+    {name:'入賞パネル',help:{crit:['パネルの質の状態（傷・割れ・汚れ）','文字が読めるか']},items:[{n:'優勝パネル',q:'×1'},{n:'準優勝パネル',q:'×1'},{n:'ゲームタイムパネル',q:'×1'}]},
+    {name:'レンタル品',help:{crit:['枚数が揃っているか','破れ・汚れがないか','返却が必要なものがないか']},items:[{n:'ビブス'},{n:'バッシュ'}]},
+    {name:'クリアボックス',help:{crit:['残量確認（3大会分あるか）','持ち帰り忘れがないか','社用携帯・充電器の有無']},items:[{n:'延長コード',q:'×1'},{n:'テーブルバナー',q:'×2-3'},{n:'マイク',q:'×1'},{n:'充電器',q:'×1'},{n:'養生テープ',q:'×2'},{n:'空気入れ',q:'×1'},{n:'ラミネート',q:'×1'},{n:'社用携帯',q:'×1'}]},
+    {name:'救急バッグ',help:{crit:['残量確認（3大会分あるか）','使用期限切れがないか']},items:[{n:'絆創膏'},{n:'コールドスプレー'},{n:'爪切り'},{n:'ティッシュ'},{n:'テーピング（指）'},{n:'テーピング（35mm）'},{n:'テーピング（50mm）'},{n:'ソフト伸縮テーピングテープ'},{n:'キネシオロジー'},{n:'ラップ'},{n:'アルコールシート'},{n:'ゴム手袋'},{n:'ゴミ袋'},{n:'塩分タブレット'},{n:'ガーゼ'},{n:'滅菌ガーゼ'}]},
+    {name:'文房具',help:{crit:['残量確認（3大会分あるか）','インク切れ・かすれがないか']},items:[{n:'ホワイトボードマーカー'},{n:'はさみ'},{n:'クリーナー'},{n:'修正テープ'},{n:'磁石'},{n:'ボールペン'},{n:'油性ペン'}]}
+  ];
+  var SEG=[{v:'g',l:'余裕',s:'3大会OK'},{v:'y',l:'そろそろ',s:'補充準備'},{v:'r',l:'なし・破損',s:'今すぐ'}];
+  var STMAP={g:'green',y:'yellow',r:'red'};
+  var eqState={}; // key 'ci-ii' -> {v:'g|y|r', c:'comment'}
+  var area=null, attached=false;
+
+  function escE(s){if(s==null)return'';if(typeof window.esc==='function')return window.esc(s);var d=document.createElement('div');d.textContent=String(s);return d.innerHTML}
+  function lsKey(){var p=(typeof _reportLsPrefix==='function')?_reportLsPrefix():null;return p?p+'equipment':null}
+  function saveEq(){var k=lsKey();if(!k)return;try{localStorage.setItem(k,JSON.stringify(eqState))}catch(e){}}
+  function loadEq(){eqState={};var k=lsKey();if(!k)return;try{var r=localStorage.getItem(k);if(r)eqState=JSON.parse(r)||{}}catch(e){eqState={}}}
+
+  function catCounts(ci){var cat=EQ_DATA[ci],n=cat.items.length,j=0,y=0,r=0;for(var ii=0;ii<n;ii++){var st=eqState[ci+'-'+ii];if(st&&st.v){j++;if(st.v==='y')y++;else if(st.v==='r')r++;}}return{n:n,j:j,y:y,r:r}}
+  function catStat(ci){var c=catCounts(ci);if(c.r>0)return['ng','要対応 '+c.r];if(c.y>0)return['warn','補充準備 '+c.y];if(c.j===c.n)return['done','余裕'];if(c.j>0)return['part','判定中 '+c.j+'/'+c.n];return['todo','未判定']}
+
+  function render(){
+    area=document.getElementById('equipment-report-area');if(!area)return;
+    loadEq();
+    var html='';
+    for(var ci=0;ci<EQ_DATA.length;ci++){
+      var cat=EQ_DATA[ci];var stat=catStat(ci);
+      var help=cat.help?'<div class="eq-help" data-help="'+ci+'">?</div>':'';
+      html+='<div class="eq-cat" data-ci="'+ci+'"><div class="eq-head" data-ci="'+ci+'"><div class="eq-nm">'+escE(cat.name)+' <small>'+cat.items.length+'品目</small></div>'+help+'<div class="eq-stat '+stat[0]+'">'+stat[1]+'</div><div class="eq-arw">▾</div></div><div class="eq-body"><div class="eq-bulk"><button type="button" data-bulk="'+ci+'">全部「余裕」にする</button></div>';
+      for(var ii=0;ii<cat.items.length;ii++){
+        var it=cat.items[ii];var st=eqState[ci+'-'+ii]||{};
+        var seg='';
+        for(var s=0;s<SEG.length;s++){var sel=(st.v===SEG[s].v)?' sel':'';seg+='<button type="button" class="'+SEG[s].v+sel+'" data-ci="'+ci+'" data-ii="'+ii+'" data-v="'+SEG[s].v+'">'+SEG[s].l+'<small>'+SEG[s].s+'</small></button>'}
+        var showMemo=(st.v==='y'||st.v==='r')?' show-memo':'';
+        html+='<div class="eq-item'+showMemo+'" data-ci="'+ci+'" data-ii="'+ii+'"><div class="eq-iname">'+escE(it.n)+(it.q?'<small>'+escE(it.q)+'</small>':'')+'</div><div class="eq-seg">'+seg+'</div><textarea class="eq-memo" data-ci="'+ci+'" data-ii="'+ii+'" rows="2" placeholder="どんな状態か一言（紛失なら空欄でOK）">'+escE(st.c||'')+'</textarea></div>';
+      }
+      html+='</div></div>';
+    }
+    area.innerHTML=html;
+    attach();
+  }
+
+  function updateCatStat(ci){var cat=document.querySelector('.eq-cat[data-ci="'+ci+'"]');if(!cat)return;var st=catStat(ci);var el=cat.querySelector('.eq-stat');if(el){el.className='eq-stat '+st[0];el.textContent=st[1]}}
+
+  function setState(ci,ii,v){
+    var k=ci+'-'+ii;var cur=eqState[k]||{};cur.v=v;eqState[k]=cur;
+    var item=area.querySelector('.eq-item[data-ci="'+ci+'"][data-ii="'+ii+'"]');
+    if(item){var btns=item.querySelectorAll('.eq-seg button');for(var i=0;i<btns.length;i++){btns[i].className=btns[i].getAttribute('data-v')+(btns[i].getAttribute('data-v')===v?' sel':'')}
+      if(v==='y'||v==='r')item.className='eq-item show-memo';else item.className='eq-item';}
+    updateCatStat(ci);saveEq();
+  }
+  function bulkGreen(ci){for(var ii=0;ii<EQ_DATA[ci].items.length;ii++)setState(ci,ii,'g')}
+
+  function attach(){
+    if(attached)return;attached=true;
+    area.addEventListener('click',function(e){
+      var h=e.target.closest('.eq-help');if(h){e.stopPropagation();openHelp(parseInt(h.getAttribute('data-help'),10));return}
+      var bk=e.target.closest('[data-bulk]');if(bk){e.stopPropagation();bulkGreen(parseInt(bk.getAttribute('data-bulk'),10));return}
+      var b=e.target.closest('.eq-seg button');if(b){setState(parseInt(b.getAttribute('data-ci'),10),parseInt(b.getAttribute('data-ii'),10),b.getAttribute('data-v'));return}
+      var hd=e.target.closest('.eq-head');if(hd){hd.parentElement.classList.toggle('open')}
+    });
+    area.addEventListener('input',function(e){
+      var t=e.target;if(t&&t.classList&&t.classList.contains('eq-memo')){var k=t.getAttribute('data-ci')+'-'+t.getAttribute('data-ii');var cur=eqState[k]||{v:''};cur.c=t.value;eqState[k]=cur;saveEq()}
+    });
+  }
+
+  // ヘルプ（注意事項＋参考写真：開いた時だけ画像読み込み）
+  var ov=null,mt=null,mc=null,mp=null,mpimg=null;
+  function ensureModal(){
+    if(ov)return;
+    ov=document.createElement('div');ov.className='eq-ov';ov.id='eq-ov';
+    ov.innerHTML='<div class="eq-modal"><h3 id="eq-mt"></h3><ul class="eq-crit" id="eq-mc"></ul><div class="eq-photo" id="eq-mp"><div class="eq-pcap">参考写真（交換の目安／消耗の例）</div><div class="eq-pimg" id="eq-mpimg"></div><div class="eq-pnote">消耗の例。本番は実物写真に差し替え可。</div></div><button type="button" class="eq-close" id="eq-mclose">閉じる</button></div>';
+    document.body.appendChild(ov);
+    mt=ov.querySelector('#eq-mt');mc=ov.querySelector('#eq-mc');mp=ov.querySelector('#eq-mp');mpimg=ov.querySelector('#eq-mpimg');
+    ov.querySelector('#eq-mclose').addEventListener('click',function(){ov.classList.remove('show')});
+    ov.addEventListener('click',function(e){if(e.target===ov)ov.classList.remove('show')});
+  }
+  function openHelp(ci){
+    ensureModal();var cat=EQ_DATA[ci],d=cat.help;if(!d)return;
+    mt.textContent=cat.name+' — チェックの目安';
+    mc.innerHTML='';for(var i=0;i<d.crit.length;i++){var li=document.createElement('li');li.textContent=d.crit[i];mc.appendChild(li)}
+    if(d.photo){mpimg.innerHTML='<img alt="参考写真" src="'+d.photo+'">';mp.classList.add('show')}else{mpimg.innerHTML='';mp.classList.remove('show')}
+    ov.classList.add('show');
+  }
+
+  // 送信payload用：判定済み品目を返す
+  window.collectEquipmentReport=function(){
+    var items=[],g=0,y=0,r=0,j=0,total=0;
+    for(var ci=0;ci<EQ_DATA.length;ci++){var cat=EQ_DATA[ci];for(var ii=0;ii<cat.items.length;ii++){total++;var st=eqState[ci+'-'+ii];if(!st||!st.v)continue;j++;if(st.v==='g')g++;else if(st.v==='y')y++;else if(st.v==='r')r++;var it=cat.items[ii];items.push({category:cat.name,item:it.n+(it.q?it.q:''),status:STMAP[st.v],comment:(st.c||'').trim()})}}
+    return{total:total,judged:j,green:g,yellow:y,red:r,items:items};
+  };
+
+  // 確認画面用：備品サマリHTML
+  window.buildEquipmentConfirm=function(){
+    var c=window.collectEquipmentReport();
+    var reds=[],yellows=[];
+    for(var i=0;i<c.items.length;i++){if(c.items[i].status==='red')reds.push(c.items[i]);else if(c.items[i].status==='yellow')yellows.push(c.items[i])}
+    var h='<div class="confirm-section"><div class="confirm-section-title">備品報告</div>';
+    function line(x){return escE(x.category)+'：'+escE(x.item)+(x.comment?'（'+escE(x.comment)+'）':'')}
+    for(var a=0;a<reds.length;a++)h+='<div class="confirm-item" style="color:#ff3b30">なし・破損: '+line(reds[a])+'</div>';
+    for(var b=0;b<yellows.length;b++)h+='<div class="confirm-item" style="color:#b9770f">要補充: '+line(yellows[b])+'</div>';
+    if(!reds.length&&!yellows.length)h+='<div class="confirm-item">すべて余裕'+(c.judged<c.total?'（判定 '+c.judged+'/'+c.total+'）':'（'+c.total+'品目）')+'</div>';
+    var un=c.total-c.judged;if(un>0)h+='<div class="confirm-item" style="color:#ff9500">未判定 '+un+'品目</div>';
+    h+='</div>';return h;
+  };
+
+  // 報告画面を開いたら描画（goReport をラップ）
+  if(typeof window.goReport==='function'){var _g=window.goReport;window.goReport=function(){var rv=_g.apply(this,arguments);try{setTimeout(render,0)}catch(e){}return rv}}
+  document.addEventListener('DOMContentLoaded',function(){var el=document.getElementById('equipment-report-area');if(el)try{render()}catch(e){}});
+})();
 </script>
 </body>
 </html>

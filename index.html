@@ -1194,7 +1194,8 @@ document.addEventListener('DOMContentLoaded',function(){_attachReportAutoSave();
 .eq-crit li:before{content:"";position:absolute;left:2px;top:14px;width:8px;height:8px;border-radius:50%;background:#34a853}
 .eq-photo{display:none;margin-top:14px}.eq-photo.show{display:block}
 .eq-pcap{font-size:12px;font-weight:700;color:#b9770f;margin-bottom:6px}
-.eq-pimg{background:#f7f9fc;border:1.5px solid #e3e9f1;border-radius:11px;padding:8px;text-align:center}
+.eq-pimg{position:relative;background:#f7f9fc;border:1.5px solid #e3e9f1;border-radius:11px;padding:8px;text-align:center}
+.eq-sample{position:absolute;top:10px;left:10px;background:#ea4335;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:6px;z-index:2;box-shadow:0 1px 3px rgba(0,0,0,.35);letter-spacing:.04em}
 .eq-pimg img{max-width:100%;border-radius:8px;display:block;margin:0 auto}
 .eq-pnote{font-size:11px;color:#98a2ad;margin-top:6px;line-height:1.5}
 .eq-close{margin-top:16px;width:100%;background:#eef1f5;color:#555;border:none;border-radius:11px;padding:13px;font-size:15px;font-weight:700;font-family:inherit}
@@ -1275,7 +1276,7 @@ document.addEventListener('DOMContentLoaded',function(){_attachReportAutoSave();
   function ensureModal(){
     if(ov)return;
     ov=document.createElement('div');ov.className='eq-ov';ov.id='eq-ov';
-    ov.innerHTML='<div class="eq-modal"><h3 id="eq-mt"></h3><ul class="eq-crit" id="eq-mc"></ul><div class="eq-photo" id="eq-mp"><div class="eq-pcap">参考写真（交換の目安／消耗の例）</div><div class="eq-pimg" id="eq-mpimg"></div><div class="eq-pnote">消耗の例。本番は実物写真に差し替え可。</div></div><button type="button" class="eq-close" id="eq-mclose">閉じる</button></div>';
+    ov.innerHTML='<div class="eq-modal"><h3 id="eq-mt"></h3><ul class="eq-crit" id="eq-mc"></ul><div class="eq-photo" id="eq-mp"><div class="eq-pcap">参考写真（サンプル）／交換の目安</div><div class="eq-pimg" id="eq-mpimg"></div><div class="eq-pnote">※ これはサンプル画像です。本番の実物写真に差し替え予定。</div></div><button type="button" class="eq-close" id="eq-mclose">閉じる</button></div>';
     document.body.appendChild(ov);
     mt=ov.querySelector('#eq-mt');mc=ov.querySelector('#eq-mc');mp=ov.querySelector('#eq-mp');mpimg=ov.querySelector('#eq-mpimg');
     ov.querySelector('#eq-mclose').addEventListener('click',function(){ov.classList.remove('show')});
@@ -1285,7 +1286,7 @@ document.addEventListener('DOMContentLoaded',function(){_attachReportAutoSave();
     ensureModal();var cat=EQ_DATA[ci],d=cat.help;if(!d)return;
     mt.textContent=cat.name+' — チェックの目安';
     mc.innerHTML='';for(var i=0;i<d.crit.length;i++){var li=document.createElement('li');li.textContent=d.crit[i];mc.appendChild(li)}
-    if(d.photo){mpimg.innerHTML='<img alt="参考写真" src="'+d.photo+'">';mp.classList.add('show')}else{mpimg.innerHTML='';mp.classList.remove('show')}
+    if(d.photo){mpimg.innerHTML='<span class="eq-sample">サンプル</span><img alt="参考写真（サンプル）" src="'+d.photo+'">';mp.classList.add('show')}else{mpimg.innerHTML='';mp.classList.remove('show')}
     ov.classList.add('show');
   }
 

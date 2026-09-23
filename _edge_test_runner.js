@@ -32,11 +32,14 @@ function makeFetchMock(patterns) {
         if (p.match(String(url), parsed)) { response = p.response(String(url), parsed); break; }
       }
     }
-    return Promise.resolve({
+    // PIN 認証ラッパーが res.clone().json() を呼ぶため clone も用意する
+    const res = {
       ok: true,
       json: () => Promise.resolve(response),
-      text: () => Promise.resolve(JSON.stringify(response))
-    });
+      text: () => Promise.resolve(JSON.stringify(response)),
+      clone: () => res
+    };
+    return Promise.resolve(res);
   };
   fn.calls = calls;
   return fn;
@@ -49,6 +52,10 @@ function makeDom(fetchMock, options) {
     runScripts: 'dangerously',
     pretendToBeVisual: true,
     beforeParse(window) {
+      // PIN 認証済み状態（テスト用ダミー値。本物のトークンではない）
+      window.localStorage.setItem('pinAuth_token', 'edge-dummy-token');
+      window.localStorage.setItem('pinAuth_pinVersion', '1');
+      window.localStorage.setItem('pinAuth_expiresAt', String(Date.now() + 24 * 60 * 60 * 1000));
       window.fetch = fetchMock;
       window.alert = () => {};
       window.confirm = options.confirm || (() => true);
@@ -267,6 +274,7 @@ async function runTests() {
   w4.selectTournament(0);
   w4.openTeamDetail(0);
   w4.document.getElementById('bs-sales').value = '即決1';
+  w4._onBSChange(); // 入力イベント相当（8c62e17 以降、閉じる時は保存待ちを確定する方式）
   const t0 = Date.now();
   w4.saveLocalAndClose();
   await waitUntil(() => attempts4.length >= 1, 2000);

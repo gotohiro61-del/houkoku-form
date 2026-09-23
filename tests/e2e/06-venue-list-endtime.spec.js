@@ -1,11 +1,14 @@
 // S6: 会場一覧カードに最終大会の終了予定時刻「〜HH:MM」が表示されるか
 const { test, expect } = require('@playwright/test');
+const { seedAuth, blockExternal } = require('./_fixtures');
 const { setupApiMock } = require('./_fixtures');
 
 test.describe('会場一覧の終了予定時刻表示', () => {
   test('計算可能な会場は「〜HH:MM」が表示される', async ({ page }) => {
     // fixture はデフォルトで 大会1=1チーム（テーブル外）
     // → カスタムフィクスチャで計算可能な状態を作る
+    await seedAuth(page);
+    await blockExternal(page);
     await page.route('https://script.google.com/**', async (route) => {
       const req = route.request();
       const url = req.url();

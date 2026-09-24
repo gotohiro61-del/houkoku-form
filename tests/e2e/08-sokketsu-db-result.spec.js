@@ -57,6 +57,7 @@ for (const pageFile of PAGES) {
       expect(posts.length).toBe(2);
       expect(posts[0].parsed.requestId).toMatch(UUID_RE);
       expect(posts[0].parsed.teamKey).toBe('T1|A1|チームa'); // R列の対応スタッフ転記の照合用
+      expect(posts[0].parsed.spreadsheetId).toBe('SSID_A'); // 選択中会場のブック（サーバーが resolveVenueTarget_ で検証）
       expect(posts[1].parsed.requestId).toBe(posts[0].parsed.requestId);
     });
 

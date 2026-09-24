@@ -264,6 +264,7 @@ async function runTests() {
     assert('2.12 subtotal=0 送信', bk.subtotal === 0, 'actual=' + bk.subtotal);
     assert('2.13 requestId(UUID) 送信', /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(last.requestId || ''), 'actual=' + last.requestId);
     assert('2.13b 選択中チームの teamKey を送る（R列の対応スタッフ転記の照合用）', last.teamKey === 'T1|A1|チームa', 'actual=' + last.teamKey);
+    assert('2.13c 選択中会場のブックとシートを送る（前月ブックの会場でも照合できるように）', last.spreadsheetId === 'SSID_A' && last.venue === '21日 渋谷体育館', 'actual=' + last.spreadsheetId + ' / ' + last.venue);
   }
   assert('2.14 DB保存OKで完了画面表示', !w2.document.getElementById('screen-done').classList.contains('hidden'));
   dom2.window.close();
